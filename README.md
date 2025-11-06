@@ -115,6 +115,15 @@ yarn ci
 
 ---
 
+## 🔒 Конфиденциальность
+
+Мы серьезно относимся к вашей конфиденциальности. Все ваши данные хранятся **только на вашем устройстве**. Мы не собираем, не передаем и не храним никакую информацию на серверах.
+
+- [Privacy Policy (English)](PRIVACY_POLICY.md)
+- [Политика конфиденциальности (Русский)](PRIVACY_POLICY_RU.md)
+
+---
+
 ## 💖 Поддержка проекта
 
 Если вам нравится проект, вы можете поддержать его развитие:
@@ -210,6 +219,13 @@ yarn android
 ## 📝 License
 
 This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+## 🔒 Privacy
+
+We take your privacy seriously. All your data is stored **only on your device**. We do not collect, transmit, or store any information on servers.
+
+- [Privacy Policy (English)](PRIVACY_POLICY.md)
+- [Политика конфиденциальности (Русский)](PRIVACY_POLICY_RU.md)
 
 ## 💖 Support
 

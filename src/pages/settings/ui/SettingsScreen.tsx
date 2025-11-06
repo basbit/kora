@@ -71,7 +71,6 @@ export function SettingsScreen() {
         {t("settings")}
       </Text>
 
-      {/* Theme */}
       <View
         style={{
           backgroundColor: theme.surface,
