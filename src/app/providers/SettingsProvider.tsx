@@ -69,7 +69,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       : settings.theme;
   const currentLanguage: "ru" | "en" =
     settings.language === "system"
-      ? i18n.language.startsWith("ru")
+      ? i18n.language.startsWith("en")
         ? "ru"
         : "en"
       : settings.language;

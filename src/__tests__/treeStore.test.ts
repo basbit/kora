@@ -4,9 +4,8 @@ import {
   getSiblingsOf,
   getRootCandidates,
   PersonsById,
-} from "./treeStore";
-
-import type { Person } from "./types";
+} from "@entities/person/model/treeStore";
+import type { Person } from "@entities/person/model/types";
 
 type P = Person;
 
@@ -31,7 +30,7 @@ describe("treeStore selectors", () => {
   const D = p({ id: "D", firstName: "Dave", parentIds: ["A"] });
   const E = p({ id: "E", firstName: "Eve", parentIds: ["B"] });
   const F = p({ id: "F", firstName: "Frank", parentIds: ["A", "B"] });
-  const X = p({ id: "X", name: "XOld" }); // backward compat with name
+  const X = p({ id: "X", name: "XOld" });
 
   const personsById: PersonsById = { A, B, C, D, E, F, X };
 
@@ -58,7 +57,6 @@ describe("treeStore selectors", () => {
     const roots = getRootCandidates(personsById).map(
       (p) => p.firstName || p.name,
     );
-    // A, B, XOld (from legacy name)
     expect(roots).toEqual(["Alice", "Bob", "XOld"]);
   });
 });

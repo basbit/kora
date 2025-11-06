@@ -1,5 +1,4 @@
 describe("images utils", () => {
-  // Helper function extracted for testing
   function getExtensionFromUri(uri: string): string {
     const match = uri.split("?")[0].match(/\.([a-zA-Z0-9]+)$/);
     return match ? match[1] : "jpg";

@@ -6,8 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "description": "Приложение для создания и управления семейным древом",
-    "privacy": "public",
+    "description": "Application for creating and managing family trees",
     "icon": "./assets/kora.png",
     "splash": {
       "image": "./assets/kora.png",
@@ -23,9 +22,10 @@
       "buildNumber": "1",
       "newArchEnabled": true,
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Приложению нужен доступ к вашим фотографиям для загрузки изображений членов семьи",
-        "NSCameraUsageDescription": "Приложению нужен доступ к камере для создания фотографий членов семьи",
-        "NSPhotoLibraryAddUsageDescription": "Приложению нужен доступ для сохранения экспортированных данных"
+        "NSPhotoLibraryUsageDescription": "The app needs access to your photos to upload family member images",
+        "NSCameraUsageDescription": "The app needs access to the camera to take photos of family members",
+        "NSPhotoLibraryAddUsageDescription": "The app needs access to save exported data",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -50,7 +50,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Приложению нужен доступ к вашим фотографиям для загрузки изображений членов семьи"
+          "photosPermission": "The app needs access to your photos to upload family member images"
         }
       ]
     ],

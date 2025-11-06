@@ -140,7 +140,6 @@ yarn ci
 ## 📧 Контакты
 
 - GitHub: [@basbit](https://github.com/basbit)
-- Email: rbaster@example.com
 
 ---
 

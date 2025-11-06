@@ -1,7 +1,6 @@
 import type { Person } from "@entities/person/model/types";
 
 describe("StoreProvider helpers", () => {
-  // Helper function extracted for testing
   function normalizePerson(p: Partial<Person> & { id: string }): Person {
     const firstName = p.firstName ?? (p as any).name ?? "";
     const lastName = p.lastName ?? undefined;

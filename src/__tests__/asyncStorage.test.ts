@@ -1,15 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import type { TreeJson } from "@entities/person/model/types";
-
 import {
   loadTreeFromStorage,
   loadViewStateFromStorage,
   saveTreeToStorage,
   saveViewStateToStorage,
-} from "./asyncStorage";
+} from "@shared/lib/storage/asyncStorage";
+import type { ViewState } from "@shared/lib/storage/asyncStorage";
 
-import type { ViewState } from "./asyncStorage";
+import type { TreeJson } from "@entities/person/model/types";
 
 jest.mock("@react-native-async-storage/async-storage");
 

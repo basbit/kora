@@ -1,6 +1,5 @@
-import { filterAndSortForParentSelector } from "./sort";
-
-import type { Person } from "./types";
+import { filterAndSortForParentSelector } from "@entities/person/model/sort";
+import type { Person } from "@entities/person/model/types";
 
 describe("filterAndSortForParentSelector", () => {
   const mk = (

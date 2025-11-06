@@ -13,7 +13,6 @@ const baseDir = FileSystem.cacheDirectory || FileSystem.documentDirectory || "";
 export async function exportTreeArchive(json: string): Promise<void> {
   const zip = new JSZip();
 
-  // Подготовим JSON и соберём images/**
   let toWrite = json;
   try {
     const parsed = JSON.parse(json) as TreeJson;
@@ -38,7 +37,7 @@ export async function exportTreeArchive(json: string): Promise<void> {
     }
     toWrite = JSON.stringify({ persons: updatedPersons }, null, 2);
   } catch {
-    // используем исходный json
+    // Ignore errors during initialization
   }
 
   zip.file("tree.json", toWrite);
@@ -70,7 +69,6 @@ export async function importTreeArchive(): Promise<string | null> {
   if (res.canceled || !res.assets?.[0]) return null;
   const asset = res.assets[0];
 
-  // Читаем архив как base64 и распаковываем
   const base64Zip = await FileSystem.readAsStringAsync(asset.uri, {
     encoding: FileSystem.EncodingType.Base64,
   });
@@ -100,7 +98,7 @@ export async function importTreeArchive(): Promise<string | null> {
             });
             photoUri = dest;
           } catch {
-            // игнорируем ошибки записи
+            // Ignore errors during image copy
           }
         }
       }

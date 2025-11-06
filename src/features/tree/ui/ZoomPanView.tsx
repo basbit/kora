@@ -27,11 +27,9 @@ import type {
 export const ZoomPanView: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
-  // Масштаб: baseScale * pinchScale
   const baseScale = useSharedValue(1);
   const pinchScale = useSharedValue(1);
 
-  // Панорамирование: offset + translation
   const offsetX = useSharedValue(0);
   const offsetY = useSharedValue(0);
   const translationX = useSharedValue(0);
@@ -40,7 +38,6 @@ export const ZoomPanView: React.FC<{
   const { isDragging } = useDragCtx();
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Загрузка сохраненного состояния при монтировании
   useEffect(() => {
     (async () => {
       const saved = await loadViewStateFromStorage();
@@ -52,7 +49,6 @@ export const ZoomPanView: React.FC<{
     })();
   }, []);
 
-  // Функция для сохранения состояния с debounce
   const scheduleStateSave = () => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);

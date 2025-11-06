@@ -1,4 +1,4 @@
-import { computeInitialPosition } from "./positioning";
+import { computeInitialPosition } from "@entities/person/model/positioning";
 
 describe("computeInitialPosition", () => {
   it("places first node at bottom center baseline", () => {

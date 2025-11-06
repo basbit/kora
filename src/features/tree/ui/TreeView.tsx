@@ -30,10 +30,9 @@ import { useTreeStore } from "@app/providers/StoreProvider";
 import { DragProvider, useDragCtx } from "./DragContext";
 import { ZoomPanView } from "./ZoomPanView";
 
-// Константы размеров карточки
 const CARD_WIDTH = 100;
 const AVATAR_SIZE = 64;
-const CARD_HEIGHT = 110; // аватар 64 + отступ 6 + имя ~28 + даты ~18
+const CARD_HEIGHT = 110;
 
 const ParentEdge = React.memo<{
   from: string;
@@ -95,7 +94,6 @@ const ParentEdge = React.memo<{
 
 ParentEdge.displayName = "ParentEdge";
 
-// Компонент для отрисовки одной линии супругов
 const SpouseEdge = React.memo<{
   a: string;
   b: string;
@@ -170,18 +168,15 @@ const TreeCanvas: React.FC<{ rootId: string }> = ({ rootId: _rootId }) => {
   const { currentTheme } = useSettings();
   const theme = currentTheme === "dark" ? colors.dark : colors.light;
 
-  // Используем useRef для dragOffsets чтобы избежать частых ре-рендеров
   const dragOffsetsRef = useRef<Record<string, { x: number; y: number }>>({});
   const [, forceUpdate] = useState({});
   const rafIdRef = useRef<number | null>(null);
 
-  // Показываем все узлы (включая «корни» без родителей)
   const nodes: string[] = useMemo(
     () => Object.keys(personsById),
     [personsById],
   );
 
-  // Функция для получения реальной позиции с учетом перетаскивания
   const getRealPosition = useCallback(
     (id: string) => {
       const basePos = positions[id] ?? { x: 0, y: 0 };
@@ -191,12 +186,10 @@ const TreeCanvas: React.FC<{ rootId: string }> = ({ rootId: _rootId }) => {
     [positions],
   );
 
-  // Callback для обновления офсета с throttle через RAF
   const handleDragOffset = useCallback(
     (id: string, offset: { x: number; y: number }) => {
       dragOffsetsRef.current[id] = offset;
 
-      // Throttle обновлений через requestAnimationFrame
       if (rafIdRef.current === null) {
         rafIdRef.current = requestAnimationFrame(() => {
           forceUpdate({});
@@ -207,7 +200,6 @@ const TreeCanvas: React.FC<{ rootId: string }> = ({ rootId: _rootId }) => {
     [],
   );
 
-  // Очистка RAF при размонтировании
   useEffect(() => {
     return () => {
       if (rafIdRef.current !== null) {
@@ -216,7 +208,6 @@ const TreeCanvas: React.FC<{ rootId: string }> = ({ rootId: _rootId }) => {
     };
   }, []);
 
-  // Строим рёбра по всем parentIds
   const parentEdges = useMemo(() => {
     const list: Array<{ from: string; to: string }> = [];
     for (const child of Object.values(personsById)) {
@@ -302,8 +293,6 @@ const AbsoluteNode: React.FC<{
   const [offsetY, setOffsetY] = useState(0);
   const [selected, setSelected] = useState(false);
   const [editing, setEditing] = useState(false);
-
-  // Используем ref для хранения текущей позиции из стора
   const storePosRef = useRef(storePos);
   storePosRef.current = storePos;
 
@@ -314,7 +303,6 @@ const AbsoluteNode: React.FC<{
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_evt, gesture) => {
-        // Начинаем драг только если сдвинулись больше чем на 5px
         return Math.abs(gesture.dx) + Math.abs(gesture.dy) > 5;
       },
       onPanResponderGrant: (_evt, _gesture) => {
@@ -339,7 +327,6 @@ const AbsoluteNode: React.FC<{
           setOffsetY(0);
           isDraggingRef.current = false;
           setIsDragging(false);
-          // Сбрасываем офсет
           onDragOffset({ x: 0, y: 0 });
         }
       },
@@ -352,7 +339,6 @@ const AbsoluteNode: React.FC<{
           setOffsetY(0);
           isDraggingRef.current = false;
           setIsDragging(false);
-          // Сбрасываем офсет
           onDragOffset({ x: 0, y: 0 });
         }
       },
@@ -360,7 +346,6 @@ const AbsoluteNode: React.FC<{
   ).current;
 
   const handlePress = () => {
-    // Открываем модал только если не было перетаскивания
     if (!isDraggingRef.current) {
       setSelected(true);
     }
@@ -373,7 +358,6 @@ const AbsoluteNode: React.FC<{
         left: storePos.x + offsetX,
         top: storePos.y + offsetY,
       }}
-      // eslint-disable-next-line react/jsx-props-no-spreading
       {...pan.panHandlers}
     >
       <NodeCard person={person} onPress={handlePress} />

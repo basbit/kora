@@ -90,7 +90,7 @@ export function SettingsScreen() {
             accent={theme.accent}
             primary={theme.primary}
           >
-            system
+            {t("theme_system")}
           </Chip>
           <Chip
             active={settings.theme === "light"}
@@ -98,7 +98,7 @@ export function SettingsScreen() {
             accent={theme.accent}
             primary={theme.primary}
           >
-            light
+            {t("theme_light")}
           </Chip>
           <Chip
             active={settings.theme === "dark"}
@@ -106,7 +106,7 @@ export function SettingsScreen() {
             accent={theme.accent}
             primary={theme.primary}
           >
-            dark
+            {t("theme_dark")}
           </Chip>
         </View>
         <Text style={{ color: theme.secondary }}>
@@ -114,7 +114,6 @@ export function SettingsScreen() {
         </Text>
       </View>
 
-      {/* Language */}
       <View
         style={{
           backgroundColor: theme.surface,
@@ -133,7 +132,7 @@ export function SettingsScreen() {
             accent={theme.accent}
             primary={theme.primary}
           >
-            system
+            {t("lang_system")}
           </Chip>
           <Chip
             active={settings.language === "ru"}
@@ -141,7 +140,7 @@ export function SettingsScreen() {
             accent={theme.accent}
             primary={theme.primary}
           >
-            ru
+            {t("lang_ru")}
           </Chip>
           <Chip
             active={settings.language === "en"}
@@ -149,7 +148,7 @@ export function SettingsScreen() {
             accent={theme.accent}
             primary={theme.primary}
           >
-            en
+            {t("lang_en")}
           </Chip>
         </View>
         <Text style={{ color: theme.secondary }}>
@@ -157,7 +156,6 @@ export function SettingsScreen() {
         </Text>
       </View>
 
-      {/* Data */}
       <View
         style={{
           backgroundColor: theme.surface,
@@ -197,7 +195,6 @@ export function SettingsScreen() {
         </Text>
       </View>
 
-      {/* About */}
       <View>
         <Pressable
           onPress={() => setAboutVisible(true)}
@@ -261,7 +258,6 @@ export function SettingsScreen() {
                 {t("about_app_description")}
               </Text>
 
-              {/* License */}
               <View
                 style={{
                   backgroundColor: theme.surfaceVariant,
@@ -285,7 +281,6 @@ export function SettingsScreen() {
                 </Text>
               </View>
 
-              {/* GitHub */}
               <Pressable
                 onPress={() =>
                   Linking.openURL("https://github.com/basbit/kora")
@@ -312,7 +307,6 @@ export function SettingsScreen() {
                 </Text>
               </Pressable>
 
-              {/* Support */}
               <Pressable
                 onPress={() =>
                   Linking.openURL("https://buymeacoffee.com/rbaster")

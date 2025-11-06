@@ -1,5 +1,4 @@
 describe("NodeCard date formatting", () => {
-  // Helper function extracted from NodeCard for testing
   function formatDates(birth?: string, death?: string): string {
     if (!birth && !death) return "";
     const birthYear = birth ? birth.split("-")[0] : "";

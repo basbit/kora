@@ -1,80 +1,60 @@
-/**
- * Цветовая палитра приложения КОРⱯ
- * Природная тема с теплыми зелеными и коричневыми оттенками
- */
-
 export const colors = {
-  // Основные цвета палитры
-  cream: "#fdf6e5", // Кремовый фон (светлая тема)
-  darkGreen: "#163c27", // Темно-зеленый (основной)
-  brown: "#9a5817", // Коричневый (акцент)
+  cream: "#fdf6e5",
+  darkGreen: "#163c27",
+  brown: "#9a5817",
 
-  // Светлая тема
   light: {
-    // Фоны
-    background: "#fdf6e5", // Основной фон
-    surface: "#ffffff", // Карточки, модальные окна
-    surfaceVariant: "#f5ede0", // Альтернативные поверхности
+    background: "#fdf6e5",
+    surface: "#ffffff",
+    surfaceVariant: "#f5ede0",
 
-    // Текст
-    primary: "#163c27", // Основной текст
-    secondary: "#4a6b4f", // Вторичный текст
-    tertiary: "#7a8a7d", // Третичный текст
-    disabled: "#b8c4ba", // Отключенный текст
+    primary: "#163c27",
+    secondary: "#4a6b4f",
+    tertiary: "#7a8a7d",
+    disabled: "#b8c4ba",
 
-    // Акценты
-    accent: "#9a5817", // Основной акцент (коричневый)
-    accentLight: "#c47826", // Светлый акцент
-    accentDark: "#6d3f11", // Темный акцент
+    accent: "#9a5817",
+    accentLight: "#c47826",
+    accentDark: "#6d3f11",
 
-    // Специальные
-    border: "#d4c5a9", // Границы
-    divider: "#e8dfc8", // Разделители
-    error: "#c41e3a", // Ошибки
-    success: "#2d5f3f", // Успех
-    warning: "#d4860c", // Предупреждения
+    border: "#d4c5a9",
+    divider: "#e8dfc8",
+    error: "#c41e3a",
+    success: "#2d5f3f",
+    warning: "#d4860c",
 
-    // Связи в дереве
-    parentLink: "#4a6b4f", // Линии родитель-потомок
-    spouseLink: "#9a5817", // Линии супругов
+    parentLink: "#4a6b4f",
+    spouseLink: "#9a5817",
 
-    // Аватары
-    avatarBg: "#e8dfc8", // Фон аватара
-    avatarIcon: "#9a5817", // Иконка аватара
+    avatarBg: "#e8dfc8",
+    avatarIcon: "#9a5817",
   },
 
-  // Темная тема
   dark: {
-    // Фоны
-    background: "#0f2318", // Основной фон
-    surface: "#163c27", // Карточки, модальные окна
-    surfaceVariant: "#1f4a32", // Альтернативные поверхности
+    background: "#0f2318",
+    surface: "#163c27",
+    surfaceVariant: "#1f4a32",
 
-    // Текст
-    primary: "#fdf6e5", // Основной текст
-    secondary: "#c4b89a", // Вторичный текст
-    tertiary: "#9a9283", // Третичный текст
-    disabled: "#6b6658", // Отключенный текст
+    primary: "#fdf6e5",
+    secondary: "#c4b89a",
+    tertiary: "#9a9283",
+    disabled: "#6b6658",
 
-    // Акценты
-    accent: "#c47826", // Основной акцент (светло-коричневый)
-    accentLight: "#e89b3e", // Светлый акцент
-    accentDark: "#9a5817", // Темный акцент
+    accent: "#c47826",
+    accentLight: "#e89b3e",
+    accentDark: "#9a5817",
 
-    // Специальные
-    border: "#2a5234", // Границы
-    divider: "#1f4028", // Разделители
-    error: "#e84a5f", // Ошибки
-    success: "#4a8059", // Успех
-    warning: "#f0a838", // Предупреждения
+    border: "#2a5234",
+    divider: "#1f4028",
+    error: "#e84a5f",
+    success: "#4a8059",
+    warning: "#f0a838",
 
-    // Связи в дереве
-    parentLink: "#7a9e7f", // Линии родитель-потомок
-    spouseLink: "#c47826", // Линии супругов
+    parentLink: "#7a9e7f",
+    spouseLink: "#c47826",
 
-    // Аватары
-    avatarBg: "#2a5234", // Фон аватара
-    avatarIcon: "#c47826", // Иконка аватара
+    avatarBg: "#2a5234",
+    avatarIcon: "#c47826",
   },
 };
 

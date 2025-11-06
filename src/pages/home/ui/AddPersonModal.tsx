@@ -100,7 +100,6 @@ export const AddPersonModal: React.FC<{
   const [spouseQuery, setSpouseQuery] = useState("");
   const [spouseSelectorOpen, setSpouseSelectorOpen] = useState(false);
 
-  // Загрузка данных редактируемого человека
   const loadEditData = useCallback(() => {
     if (!editPerson) return;
     setFirstName(editPerson.firstName);
@@ -113,7 +112,6 @@ export const AddPersonModal: React.FC<{
     setSpouseId(editPerson.spouseIds?.[0]);
   }, [editPerson]);
 
-  // Сброс формы для нового человека
   const resetForm = useCallback(() => {
     setFirstName("");
     setLastName("");
@@ -125,7 +123,6 @@ export const AddPersonModal: React.FC<{
     setSpouseId(undefined);
   }, []);
 
-  // Сброс состояния UI элементов
   const resetUIState = useCallback(() => {
     setParentQuery("");
     setShowBirthPicker(false);
@@ -205,7 +202,6 @@ export const AddPersonModal: React.FC<{
     });
   const maybeCopyPhoto = async (id: string) => {
     if (!newPhotoUri) return undefined;
-    // Если редактируем и фото не изменилось, возвращаем старое
     if (editPerson && newPhotoUri === editPerson.photoUri) return newPhotoUri;
     try {
       return await copyImageToAppDir(id, newPhotoUri);
@@ -231,7 +227,6 @@ export const AddPersonModal: React.FC<{
   };
   const linkSpouse = (id: string) => {
     if (spouseId && spouseId !== id) {
-      // симметричная связь супругов
       linkSpouses(spouseId, id);
     }
   };
@@ -244,7 +239,6 @@ export const AddPersonModal: React.FC<{
     }
     if (parentId) {
       const p = positions[parentId] ?? { x: 0, y: 600 };
-      // равномерно раздвинем детей по X
       const existingChildren = getChildrenOf(personsById, parentId);
       const placed = existingChildren.filter(
         (c) => positions[c.id] !== undefined,
@@ -263,19 +257,16 @@ export const AddPersonModal: React.FC<{
     setNodePosition(id, maxX + 200, 600);
   };
 
-  // Обработка редактирования существующего человека
   const handleEditPerson = useCallback(
     async (person: Person) => {
       const photo = await maybeCopyPhoto(person.id);
 
-      // Обновляем родителя
       const oldParentId = person.parentIds[0];
       if (oldParentId !== parentId) {
         if (oldParentId) unlinkParentChild(oldParentId, person.id);
         if (parentId) linkParentChild(parentId, person.id);
       }
 
-      // Обновляем супруга
       const oldSpouseId = person.spouseIds?.[0];
       if (oldSpouseId !== spouseId) {
         if (oldSpouseId) unlinkSpouses(oldSpouseId, person.id);
@@ -311,7 +302,6 @@ export const AddPersonModal: React.FC<{
     ],
   );
 
-  // Обработка создания нового человека
   const handleCreatePerson = useCallback(async () => {
     const id = createPersonId();
     const photo = await maybeCopyPhoto(id);
@@ -360,7 +350,6 @@ export const AddPersonModal: React.FC<{
             {editPerson ? "Редактировать" : t("new_person")}
           </Text>
 
-          {/* avatar picker */}
           <View style={{ alignItems: "center", gap: 8 }}>
             <Pressable onPress={pickPhoto} style={{ alignItems: "center" }}>
               {newPhotoUri ? (
@@ -385,7 +374,6 @@ export const AddPersonModal: React.FC<{
             </Pressable>
           </View>
 
-          {/* names */}
           <TextInput
             placeholder={t("first_name")}
             value={firstName}
@@ -399,9 +387,7 @@ export const AddPersonModal: React.FC<{
             style={inputStyle}
           />
 
-          {/* dates */}
           <View style={{ flexDirection: "row", gap: 8 }}>
-            {/* birth */}
             <Pressable
               onPress={() => {
                 setTempBirth(isoToDate(birth) ?? new Date());
@@ -422,7 +408,6 @@ export const AddPersonModal: React.FC<{
               </Text>
               <Ionicons name="calendar-outline" size={18} color="#616161" />
             </Pressable>
-            {/* death */}
             <Pressable
               onPress={() => {
                 setTempDeath(isoToDate(death) ?? new Date());
@@ -445,7 +430,6 @@ export const AddPersonModal: React.FC<{
             </Pressable>
           </View>
 
-          {/* comment */}
           <TextInput
             placeholder={t("comment")}
             value={comment}
@@ -454,7 +438,6 @@ export const AddPersonModal: React.FC<{
             multiline
           />
 
-          {/* parent selector */}
           <Text style={{ color: "#555" }}>{t("parent_optional")}</Text>
           <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
             <Pressable
@@ -491,7 +474,6 @@ export const AddPersonModal: React.FC<{
             )}
           </View>
 
-          {/* spouse selector */}
           <Text style={{ color: "#555" }}>Супруг(а) (необязательно)</Text>
           <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
             <Pressable
@@ -528,7 +510,6 @@ export const AddPersonModal: React.FC<{
             )}
           </View>
 
-          {/* parent modal */}
           <Modal
             visible={parentSelectorOpen}
             transparent
@@ -598,7 +579,6 @@ export const AddPersonModal: React.FC<{
             </View>
           </Modal>
 
-          {/* spouse modal */}
           <Modal
             visible={spouseSelectorOpen}
             transparent
@@ -668,7 +648,6 @@ export const AddPersonModal: React.FC<{
             </View>
           </Modal>
 
-          {/* Birth Date Picker Modal */}
           {showBirthPicker && Platform.OS === "ios" && (
             <Modal
               transparent
@@ -752,7 +731,6 @@ export const AddPersonModal: React.FC<{
             />
           )}
 
-          {/* Death Date Picker Modal */}
           {showDeathPicker && Platform.OS === "ios" && (
             <Modal
               transparent
@@ -836,7 +814,6 @@ export const AddPersonModal: React.FC<{
             />
           )}
 
-          {/* actions */}
           <View
             style={{
               flexDirection: "row",
