@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "КОРⱯ",
+    "slug": "kora",
+    "scheme": "kora",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "description": "Приложение для создания и управления семейным древом",
+    "privacy": "public",
+    "icon": "./assets/kora.png",
+    "splash": {
+      "image": "./assets/kora.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#fcf5e7"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rbaster.kora",
+      "buildNumber": "1",
+      "newArchEnabled": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Приложению нужен доступ к вашим фотографиям для загрузки изображений членов семьи",
+        "NSCameraUsageDescription": "Приложению нужен доступ к камере для создания фотографий членов семьи",
+        "NSPhotoLibraryAddUsageDescription": "Приложению нужен доступ для сохранения экспортированных данных"
+      }
+    },
+    "android": {
+      "package": "com.rbaster.kora",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/kora.png",
+        "backgroundColor": "#fcf5e7"
+      },
+      "newArchEnabled": true
+    },
+    "plugins": [
+      [
+        "expo-document-picker"
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Приложению нужен доступ к вашим фотографиям для загрузки изображений членов семьи"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7bcb0810-67f4-4d33-9cf3-9d7b19cd995e"
+      }
+    }
+  }
+}

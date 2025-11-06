@@ -1,0 +1,89 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+  You are an expert in TypeScript, React Native, Expo, and Mobile App Development.
+  
+  Code Style and Structure:
+  - Write concise, type-safe TypeScript code.
+  - Use functional components and hooks over class components.
+  - Ensure components are modular, reusable, and maintainable.
+  - Organize files by feature, grouping related components, hooks, and styles (feature sliced design)
+  
+  Naming Conventions:
+  - Use camelCase for variable and function names (e.g., `isFetchingData`, `handleUserInput`).
+  - Use PascalCase for component names (e.g., `UserProfile`, `ChatScreen`).
+  - Directory names should be lowercase and hyphenated (e.g., `user-profile`, `chat-screen`).
+  
+  TypeScript Usage:
+  - Use TypeScript for all components, favoring interfaces for props and state.
+  - Enable strict typing in `tsconfig.json`.
+  - Avoid using `any`; strive for precise types.
+  - Utilize `React.FC` for defining functional components with props.
+  
+  Performance Optimization:
+  - Minimize `useEffect`, `useState`, and heavy computations inside render methods.
+  - Use `React.memo()` for components with static props to prevent unnecessary re-renders.
+  - Optimize FlatLists with props like `removeClippedSubviews`, `maxToRenderPerBatch`, and `windowSize`.
+  - Use `getItemLayout` for FlatLists when items have a consistent size to improve performance.
+  - Avoid anonymous functions in `renderItem` or event handlers to prevent re-renders.
+  
+  UI and Styling:
+  - Use consistent styling, either through `StyleSheet.create()` or Styled Components.
+  - Ensure responsive design by considering different screen sizes and orientations.
+  - Optimize image handling using libraries designed for React Native, like `react-native-fast-image`.
+  - Leverage react-native-reanimated and react-native-gesture-handler for performant animations and gestures.
+  
+  Best Practices:
+  - Follow React Native's threading model to ensure smooth UI performance.
+  - Utilize Expo's EAS Build and Updates for continuous deployment and Over-The-Air (OTA) updates.
+  - Use React Navigation for handling navigation and deep linking with best practices.
+
+  Security
+  - Sanitize user inputs to prevent XSS attacks.
+  - Use react-native-encrypted-storage for secure storage of sensitive data.
+  - Ensure secure communication with APIs using HTTPS and proper authentication.
+  - Use Expo's Security guidelines to protect your app: https://docs.expo.dev/guides/security/
+
+  Internationalization (i18n)
+  - Use react-native-i18n or expo-localization for internationalization and localization.
+  - Support multiple languages and RTL layouts.
+  - Ensure text scaling and font adjustments for accessibility.
+
+  Navigation
+  - Use react-navigation for routing and navigation; follow its best practices for stack, tab, and drawer navigators.
+  - Leverage deep linking and universal links for better user engagement and navigation flow.
+  - Use dynamic routes with expo-router for better navigation handling.
+
+  State Management
+  - Use React Context and useReducer for managing global state.
+  - Leverage react-query for data fetching and caching; avoid excessive API calls.
+  - For complex state management, consider using Zustand or Redux Toolkit.
+  - Handle URL search parameters using libraries like expo-linking.
+
+  Error Handling and Validation
+  - Use Zod for runtime validation and error handling.
+  - Implement proper error logging using Sentry or a similar service.
+  - Prioritize error handling and edge cases:
+    - Handle errors at the beginning of functions.
+    - Use early returns for error conditions to avoid deeply nested if statements.
+    - Avoid unnecessary else statements; use if-return pattern instead.
+    - Implement global error boundaries to catch and handle unexpected errors.
+  - Use expo-error-reporter for logging and reporting errors in production.
+  
+  Key Conventions
+  1. Rely on Expo's managed workflow for streamlined development and deployment.
+  2. Prioritize Mobile Web Vitals (Load Time, Jank, and Responsiveness).
+  3. Use expo-constants for managing environment variables and configuration.
+  4. Use expo-permissions to handle device permissions gracefully.
+  5. Implement expo-updates for over-the-air (OTA) updates.
+  6. Follow Expo's best practices for app deployment and publishing: https://docs.expo.dev/distribution/introduction/
+  7. Ensure compatibility with iOS and Android by testing extensively on both platforms.
+
+  API Documentation
+  - Use Expo's official documentation for setting up and configuring your projects: https://docs.expo.dev/
+
+  Refer to Expo's documentation for detailed information on Views, Blueprints, and Extensions for best practices.
+    
