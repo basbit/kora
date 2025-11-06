@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { Pressable, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Pressable, Text, View, Platform } from "react-native";
 import {
   PinchGestureHandler,
   PanGestureHandler,
@@ -24,9 +24,166 @@ import type {
   PinchGestureHandlerGestureEvent,
 } from "react-native-gesture-handler";
 
-export const ZoomPanView: React.FC<{
-  children: React.ReactNode;
-}> = ({ children }) => {
+const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [scale, setScale] = useState(1);
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const saved = await loadViewStateFromStorage();
+      if (saved) {
+        setScale(saved.scale);
+        setOffsetX(saved.offsetX);
+        setOffsetY(saved.offsetY);
+      }
+    })();
+  }, []);
+
+  const scheduleStateSave = () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      saveViewStateToStorage({ scale, offsetX, offsetY }).catch(
+        () => undefined,
+      );
+    }, 500);
+  };
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = -e.deltaY * 0.01;
+        const newScale = Math.min(2.5, Math.max(0.4, scale + delta));
+        setScale(newScale);
+        scheduleStateSave();
+      }
+    };
+
+    element.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      element.removeEventListener("wheel", handleWheel);
+    };
+  }, [scale]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - offsetX, y: e.clientY - offsetY });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      setOffsetX(e.clientX - dragStart.x);
+      setOffsetY(e.clientY - dragStart.y);
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging) {
+      setIsDragging(false);
+      scheduleStateSave();
+    }
+  };
+
+  const zoomOut = () => {
+    const newScale = Math.max(0.4, scale - 0.1);
+    setScale(newScale);
+    scheduleStateSave();
+  };
+
+  const zoomIn = () => {
+    const newScale = Math.min(2.5, scale + 0.1);
+    setScale(newScale);
+    scheduleStateSave();
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      style={{
+        flex: 1,
+        overflow: "hidden",
+        cursor: isDragging ? "grabbing" : "grab",
+        position: "relative",
+      }}
+    >
+      <div
+        style={{
+          transform: `translate(${offsetX}px, ${offsetY}px) scale(${scale})`,
+          transformOrigin: "0 0",
+          width: "100%",
+          height: "100%",
+        }}
+      >
+        {children}
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          left: 12,
+          bottom: 12,
+          display: "flex",
+          gap: 8,
+        }}
+      >
+        <button
+          onClick={zoomOut}
+          style={{
+            backgroundColor: "#eeeeee",
+            paddingLeft: 12,
+            paddingRight: 12,
+            paddingTop: 8,
+            paddingBottom: 8,
+            borderRadius: 8,
+            border: "none",
+            fontSize: 18,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          -
+        </button>
+        <button
+          onClick={zoomIn}
+          style={{
+            backgroundColor: "#eeeeee",
+            paddingLeft: 12,
+            paddingRight: 12,
+            paddingTop: 8,
+            paddingBottom: 8,
+            borderRadius: 8,
+            border: "none",
+            fontSize: 18,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const ZoomPanViewMobile: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const baseScale = useSharedValue(1);
   const pinchScale = useSharedValue(1);
 
@@ -157,4 +314,13 @@ export const ZoomPanView: React.FC<{
       </Animated.View>
     </PanGestureHandler>
   );
+};
+
+export const ZoomPanView: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  if (Platform.OS === "web") {
+    return <ZoomPanViewWeb>{children}</ZoomPanViewWeb>;
+  }
+  return <ZoomPanViewMobile>{children}</ZoomPanViewMobile>;
 };

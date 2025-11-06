@@ -80,7 +80,6 @@ export default [
         'warn',
         { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' }
       ],
-      // Отключаем правила ESLint, которые конфликтуют с Prettier
       'arrow-parens': 'off',
       'bracket-spacing': 'off',
       'comma-dangle': 'off',

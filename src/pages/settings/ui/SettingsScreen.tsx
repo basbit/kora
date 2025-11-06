@@ -7,11 +7,11 @@ import {
   Pressable,
   Modal,
   Linking,
-  Alert,
   ScrollView,
 } from "react-native";
 
 import { colors } from "@shared/config/theme/colors";
+import { Alert } from "@shared/lib/platform/alert";
 
 import {
   exportTreeArchive,

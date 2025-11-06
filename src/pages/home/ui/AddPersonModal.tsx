@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,6 +15,7 @@ import {
 } from "react-native";
 
 import { copyImageToAppDir } from "@shared/lib/fs/images";
+import { DatePicker } from "@shared/ui/DatePicker";
 
 import { getChildrenOf } from "@entities/person/model/treeStore";
 import type { Person } from "@entities/person/model/types";
@@ -184,6 +184,26 @@ export const AddPersonModal: React.FC<{
   }, [personsById, spouseQuery, editPerson]);
 
   const pickPhoto = async () => {
+    if (Platform.OS === "web") {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const dataUrl = event.target?.result as string;
+            setNewPhotoUri(dataUrl);
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
+      return;
+    }
+
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.9,
@@ -294,6 +314,8 @@ export const AddPersonModal: React.FC<{
       comment,
       parentId,
       spouseId,
+      newPhotoUri,
+      editPerson,
       linkParentChild,
       unlinkParentChild,
       linkSpouses,
@@ -309,7 +331,19 @@ export const AddPersonModal: React.FC<{
     linkParent(id);
     linkSpouse(id);
     placeInitially(id);
-  }, [firstName, lastName, birth, death, comment, parentId, spouseId]);
+  }, [
+    firstName,
+    lastName,
+    birth,
+    death,
+    comment,
+    parentId,
+    spouseId,
+    newPhotoUri,
+    editPerson,
+    personsById,
+    positions,
+  ]);
 
   const submit = async () => {
     if (!firstName.trim()) return;
@@ -343,6 +377,7 @@ export const AddPersonModal: React.FC<{
             padding: 16,
             borderRadius: 8,
             width: "90%",
+            maxHeight: Platform.OS === "web" ? "90%" : undefined,
             gap: 12,
           }}
         >
@@ -350,469 +385,521 @@ export const AddPersonModal: React.FC<{
             {editPerson ? "Редактировать" : t("new_person")}
           </Text>
 
-          <View style={{ alignItems: "center", gap: 8 }}>
-            <Pressable onPress={pickPhoto} style={{ alignItems: "center" }}>
-              {newPhotoUri ? (
-                <Image
-                  source={{ uri: newPhotoUri }}
-                  style={{ width: 96, height: 96, borderRadius: 48 }}
-                />
+          <ScrollView
+            style={{ maxHeight: Platform.OS === "web" ? 600 : undefined }}
+            showsVerticalScrollIndicator={true}
+          >
+            <View style={{ alignItems: "center", gap: 12 }}>
+              <Pressable onPress={pickPhoto} style={{ alignItems: "center" }}>
+                {newPhotoUri ? (
+                  <Image
+                    source={{ uri: newPhotoUri }}
+                    style={{ width: 96, height: 96, borderRadius: 48 }}
+                  />
+                ) : (
+                  <View
+                    style={{
+                      width: 96,
+                      height: 96,
+                      borderRadius: 48,
+                      backgroundColor: "#e0e0e0",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons name="person" size={56} color="#5e35b1" />
+                  </View>
+                )}
+              </Pressable>
+            </View>
+
+            <TextInput
+              placeholder={t("first_name")}
+              value={firstName}
+              onChangeText={setFirstName}
+              style={inputStyle}
+            />
+            <TextInput
+              placeholder={t("last_name")}
+              value={lastName}
+              onChangeText={setLastName}
+              style={inputStyle}
+            />
+
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {Platform.OS === "web" ? (
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: 12, color: "#666", marginBottom: 4 }}
+                  >
+                    {t("birth_date")}
+                  </Text>
+                  <DatePicker
+                    value={isoToDate(birth) ?? new Date()}
+                    mode="date"
+                    maximumDate={new Date()}
+                    onChange={(e, d) => {
+                      if (d) setBirth(dateToIso(d));
+                    }}
+                  />
+                </View>
               ) : (
+                <Pressable
+                  onPress={() => {
+                    setTempBirth(isoToDate(birth) ?? new Date());
+                    setShowBirthPicker(true);
+                  }}
+                  style={[
+                    inputStyle,
+                    {
+                      flex: 1,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    },
+                  ]}
+                >
+                  <Text style={{ color: birth ? "#000" : "#9e9e9e" }}>
+                    {birth || t("birth_date")}
+                  </Text>
+                  <Ionicons name="calendar-outline" size={18} color="#616161" />
+                </Pressable>
+              )}
+
+              {Platform.OS === "web" ? (
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: 12, color: "#666", marginBottom: 4 }}
+                  >
+                    {t("death_date")}
+                  </Text>
+                  <DatePicker
+                    value={isoToDate(death) ?? new Date()}
+                    mode="date"
+                    maximumDate={birth ? isoToDate(birth) : new Date()}
+                    onChange={(e, d) => {
+                      if (d) setDeath(dateToIso(d));
+                    }}
+                  />
+                </View>
+              ) : (
+                <Pressable
+                  onPress={() => {
+                    setTempDeath(isoToDate(death) ?? new Date());
+                    setShowDeathPicker(true);
+                  }}
+                  style={[
+                    inputStyle,
+                    {
+                      flex: 1,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    },
+                  ]}
+                >
+                  <Text style={{ color: death ? "#000" : "#9e9e9e" }}>
+                    {death || t("death_date")}
+                  </Text>
+                  <Ionicons name="calendar-outline" size={18} color="#616161" />
+                </Pressable>
+              )}
+            </View>
+
+            <TextInput
+              placeholder={t("comment")}
+              value={comment}
+              onChangeText={setComment}
+              style={[inputStyle, { height: 80 }]}
+              multiline
+            />
+
+            <Text style={{ color: "#555" }}>{t("parent_optional")}</Text>
+            <View
+              style={{ flexDirection: "row", gap: 8, alignItems: "center" }}
+            >
+              <Pressable
+                onPress={() => setParentSelectorOpen(true)}
+                style={[
+                  inputStyle,
+                  {
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  },
+                ]}
+              >
+                <Text style={{ color: parentId ? "#000" : "#9e9e9e" }}>
+                  {parentId
+                    ? [
+                        personsById[parentId]?.firstName,
+                        personsById[parentId]?.lastName,
+                      ]
+                        .filter(Boolean)
+                        .join(" ") || personsById[parentId]?.name
+                    : t("search")}
+                </Text>
+                <Ionicons name="chevron-down" size={18} color="#616161" />
+              </Pressable>
+              {!!parentId && (
+                <Pressable
+                  onPress={() => setParentId(undefined)}
+                  style={[btnStyle.ghost, { paddingHorizontal: 12 }]}
+                >
+                  <Text>Очистить</Text>
+                </Pressable>
+              )}
+            </View>
+
+            <Text style={{ color: "#555" }}>Супруг(а) (необязательно)</Text>
+            <View
+              style={{ flexDirection: "row", gap: 8, alignItems: "center" }}
+            >
+              <Pressable
+                onPress={() => setSpouseSelectorOpen(true)}
+                style={[
+                  inputStyle,
+                  {
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  },
+                ]}
+              >
+                <Text style={{ color: spouseId ? "#000" : "#9e9e9e" }}>
+                  {spouseId
+                    ? [
+                        personsById[spouseId]?.firstName,
+                        personsById[spouseId]?.lastName,
+                      ]
+                        .filter(Boolean)
+                        .join(" ") || personsById[spouseId]?.name
+                    : t("search")}
+                </Text>
+                <Ionicons name="chevron-down" size={18} color="#616161" />
+              </Pressable>
+              {!!spouseId && (
+                <Pressable
+                  onPress={() => setSpouseId(undefined)}
+                  style={[btnStyle.ghost, { paddingHorizontal: 12 }]}
+                >
+                  <Text>Очистить</Text>
+                </Pressable>
+              )}
+            </View>
+
+            <Modal
+              visible={parentSelectorOpen}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setParentSelectorOpen(false)}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: "rgba(0,0,0,0.4)",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
                 <View
                   style={{
-                    width: 96,
-                    height: 96,
-                    borderRadius: 48,
-                    backgroundColor: "#e0e0e0",
+                    backgroundColor: "white",
+                    borderRadius: 8,
+                    width: "90%",
+                    maxHeight: "70%",
+                    padding: 12,
+                  }}
+                >
+                  <TextInput
+                    placeholder={t("search")}
+                    value={parentQuery}
+                    onChangeText={setParentQuery}
+                    style={inputStyle}
+                  />
+                  <ScrollView style={{ marginTop: 8 }}>
+                    {parentCandidates.map((p) => (
+                      <Pressable
+                        key={p.id}
+                        onPress={() => {
+                          setParentId(p.id);
+                          setParentSelectorOpen(false);
+                        }}
+                        style={{ paddingVertical: 10 }}
+                      >
+                        <Text>
+                          {[p.firstName, p.lastName]
+                            .filter(Boolean)
+                            .join(" ") || p.name}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "flex-end",
+                      marginTop: 8,
+                    }}
+                  >
+                    <Pressable
+                      onPress={() => setParentSelectorOpen(false)}
+                      style={{
+                        paddingVertical: 8,
+                        paddingHorizontal: 12,
+                        backgroundColor: "#eeeeee",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text>OK</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+
+            <Modal
+              visible={spouseSelectorOpen}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setSpouseSelectorOpen(false)}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: "rgba(0,0,0,0.4)",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: "white",
+                    borderRadius: 8,
+                    width: "90%",
+                    maxHeight: "70%",
+                    padding: 12,
+                  }}
+                >
+                  <TextInput
+                    placeholder={t("search")}
+                    value={spouseQuery}
+                    onChangeText={setSpouseQuery}
+                    style={inputStyle}
+                  />
+                  <ScrollView style={{ marginTop: 8 }}>
+                    {spouseCandidates.map((p) => (
+                      <Pressable
+                        key={p.id}
+                        onPress={() => {
+                          setSpouseId(p.id);
+                          setSpouseSelectorOpen(false);
+                        }}
+                        style={{ paddingVertical: 10 }}
+                      >
+                        <Text>
+                          {[p.firstName, p.lastName]
+                            .filter(Boolean)
+                            .join(" ") || p.name}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "flex-end",
+                      marginTop: 8,
+                    }}
+                  >
+                    <Pressable
+                      onPress={() => setSpouseSelectorOpen(false)}
+                      style={{
+                        paddingVertical: 8,
+                        paddingHorizontal: 12,
+                        backgroundColor: "#eeeeee",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text>OK</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+
+            {showBirthPicker && Platform.OS === "ios" && (
+              <Modal
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowBirthPicker(false)}
+              >
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: "rgba(0,0,0,0.5)",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <Ionicons name="person" size={56} color="#5e35b1" />
-                </View>
-              )}
-            </Pressable>
-          </View>
-
-          <TextInput
-            placeholder={t("first_name")}
-            value={firstName}
-            onChangeText={setFirstName}
-            style={inputStyle}
-          />
-          <TextInput
-            placeholder={t("last_name")}
-            value={lastName}
-            onChangeText={setLastName}
-            style={inputStyle}
-          />
-
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <Pressable
-              onPress={() => {
-                setTempBirth(isoToDate(birth) ?? new Date());
-                setShowBirthPicker(true);
-              }}
-              style={[
-                inputStyle,
-                {
-                  flex: 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                },
-              ]}
-            >
-              <Text style={{ color: birth ? "#000" : "#9e9e9e" }}>
-                {birth || t("birth_date")}
-              </Text>
-              <Ionicons name="calendar-outline" size={18} color="#616161" />
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setTempDeath(isoToDate(death) ?? new Date());
-                setShowDeathPicker(true);
-              }}
-              style={[
-                inputStyle,
-                {
-                  flex: 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                },
-              ]}
-            >
-              <Text style={{ color: death ? "#000" : "#9e9e9e" }}>
-                {death || t("death_date")}
-              </Text>
-              <Ionicons name="calendar-outline" size={18} color="#616161" />
-            </Pressable>
-          </View>
-
-          <TextInput
-            placeholder={t("comment")}
-            value={comment}
-            onChangeText={setComment}
-            style={[inputStyle, { height: 80 }]}
-            multiline
-          />
-
-          <Text style={{ color: "#555" }}>{t("parent_optional")}</Text>
-          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-            <Pressable
-              onPress={() => setParentSelectorOpen(true)}
-              style={[
-                inputStyle,
-                {
-                  flex: 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                },
-              ]}
-            >
-              <Text style={{ color: parentId ? "#000" : "#9e9e9e" }}>
-                {parentId
-                  ? [
-                      personsById[parentId]?.firstName,
-                      personsById[parentId]?.lastName,
-                    ]
-                      .filter(Boolean)
-                      .join(" ") || personsById[parentId]?.name
-                  : t("search")}
-              </Text>
-              <Ionicons name="chevron-down" size={18} color="#616161" />
-            </Pressable>
-            {!!parentId && (
-              <Pressable
-                onPress={() => setParentId(undefined)}
-                style={[btnStyle.ghost, { paddingHorizontal: 12 }]}
-              >
-                <Text>Очистить</Text>
-              </Pressable>
-            )}
-          </View>
-
-          <Text style={{ color: "#555" }}>Супруг(а) (необязательно)</Text>
-          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-            <Pressable
-              onPress={() => setSpouseSelectorOpen(true)}
-              style={[
-                inputStyle,
-                {
-                  flex: 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                },
-              ]}
-            >
-              <Text style={{ color: spouseId ? "#000" : "#9e9e9e" }}>
-                {spouseId
-                  ? [
-                      personsById[spouseId]?.firstName,
-                      personsById[spouseId]?.lastName,
-                    ]
-                      .filter(Boolean)
-                      .join(" ") || personsById[spouseId]?.name
-                  : t("search")}
-              </Text>
-              <Ionicons name="chevron-down" size={18} color="#616161" />
-            </Pressable>
-            {!!spouseId && (
-              <Pressable
-                onPress={() => setSpouseId(undefined)}
-                style={[btnStyle.ghost, { paddingHorizontal: 12 }]}
-              >
-                <Text>Очистить</Text>
-              </Pressable>
-            )}
-          </View>
-
-          <Modal
-            visible={parentSelectorOpen}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setParentSelectorOpen(false)}
-          >
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: "rgba(0,0,0,0.4)",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <View
-                style={{
-                  backgroundColor: "white",
-                  borderRadius: 8,
-                  width: "90%",
-                  maxHeight: "70%",
-                  padding: 12,
-                }}
-              >
-                <TextInput
-                  placeholder={t("search")}
-                  value={parentQuery}
-                  onChangeText={setParentQuery}
-                  style={inputStyle}
-                />
-                <ScrollView style={{ marginTop: 8 }}>
-                  {parentCandidates.map((p) => (
-                    <Pressable
-                      key={p.id}
-                      onPress={() => {
-                        setParentId(p.id);
-                        setParentSelectorOpen(false);
-                      }}
-                      style={{ paddingVertical: 10 }}
-                    >
-                      <Text>
-                        {[p.firstName, p.lastName].filter(Boolean).join(" ") ||
-                          p.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "flex-end",
-                    marginTop: 8,
-                  }}
-                >
-                  <Pressable
-                    onPress={() => setParentSelectorOpen(false)}
-                    style={{
-                      paddingVertical: 8,
-                      paddingHorizontal: 12,
-                      backgroundColor: "#eeeeee",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text>OK</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          </Modal>
-
-          <Modal
-            visible={spouseSelectorOpen}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setSpouseSelectorOpen(false)}
-          >
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: "rgba(0,0,0,0.4)",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <View
-                style={{
-                  backgroundColor: "white",
-                  borderRadius: 8,
-                  width: "90%",
-                  maxHeight: "70%",
-                  padding: 12,
-                }}
-              >
-                <TextInput
-                  placeholder={t("search")}
-                  value={spouseQuery}
-                  onChangeText={setSpouseQuery}
-                  style={inputStyle}
-                />
-                <ScrollView style={{ marginTop: 8 }}>
-                  {spouseCandidates.map((p) => (
-                    <Pressable
-                      key={p.id}
-                      onPress={() => {
-                        setSpouseId(p.id);
-                        setSpouseSelectorOpen(false);
-                      }}
-                      style={{ paddingVertical: 10 }}
-                    >
-                      <Text>
-                        {[p.firstName, p.lastName].filter(Boolean).join(" ") ||
-                          p.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "flex-end",
-                    marginTop: 8,
-                  }}
-                >
-                  <Pressable
-                    onPress={() => setSpouseSelectorOpen(false)}
-                    style={{
-                      paddingVertical: 8,
-                      paddingHorizontal: 12,
-                      backgroundColor: "#eeeeee",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text>OK</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          </Modal>
-
-          {showBirthPicker && Platform.OS === "ios" && (
-            <Modal
-              transparent
-              animationType="fade"
-              onRequestClose={() => setShowBirthPicker(false)}
-            >
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: "rgba(0,0,0,0.5)",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <View
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: 12,
-                    padding: 16,
-                    width: "90%",
-                    borderWidth: 1,
-                    borderColor: "#ddd",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: "600",
-                      marginBottom: 12,
-                      textAlign: "center",
-                    }}
-                  >
-                    {t("birth_date")}
-                  </Text>
-                  <DateTimePicker
-                    value={tempBirth}
-                    mode="date"
-                    display="inline"
-                    onChange={(e, d) => {
-                      if (d) setTempBirth(d);
-                    }}
-                  />
                   <View
                     style={{
-                      flexDirection: "row",
-                      justifyContent: "flex-end",
-                      marginTop: 12,
-                      gap: 8,
+                      backgroundColor: "white",
+                      borderRadius: 12,
+                      padding: 16,
+                      width: "90%",
+                      borderWidth: 1,
+                      borderColor: "#ddd",
                     }}
                   >
-                    <Pressable
-                      onPress={() => setShowBirthPicker(false)}
-                      style={[btnStyle.ghost, { paddingHorizontal: 16 }]}
-                    >
-                      <Text>{t("cancel")}</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        setBirth(dateToIso(tempBirth));
-                        setShowBirthPicker(false);
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontWeight: "600",
+                        marginBottom: 12,
+                        textAlign: "center",
                       }}
-                      style={[btnStyle.primary, { paddingHorizontal: 16 }]}
                     >
-                      <Text style={btnStyle.text}>OK</Text>
-                    </Pressable>
+                      {t("birth_date")}
+                    </Text>
+                    <DatePicker
+                      value={tempBirth}
+                      mode="date"
+                      display="inline"
+                      maximumDate={new Date()}
+                      onChange={(e, d) => {
+                        if (d) setTempBirth(d);
+                      }}
+                    />
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "flex-end",
+                        marginTop: 12,
+                        gap: 8,
+                      }}
+                    >
+                      <Pressable
+                        onPress={() => setShowBirthPicker(false)}
+                        style={[btnStyle.ghost, { paddingHorizontal: 16 }]}
+                      >
+                        <Text>{t("cancel")}</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => {
+                          setBirth(dateToIso(tempBirth));
+                          setShowBirthPicker(false);
+                        }}
+                        style={[btnStyle.primary, { paddingHorizontal: 16 }]}
+                      >
+                        <Text style={btnStyle.text}>OK</Text>
+                      </Pressable>
+                    </View>
                   </View>
                 </View>
-              </View>
-            </Modal>
-          )}
+              </Modal>
+            )}
 
-          {showBirthPicker && Platform.OS === "android" && (
-            <DateTimePicker
-              value={tempBirth}
-              mode="date"
-              display="default"
-              onChange={(e, d) => {
-                setShowBirthPicker(false);
-                if (d) setBirth(dateToIso(d));
-              }}
-            />
-          )}
-
-          {showDeathPicker && Platform.OS === "ios" && (
-            <Modal
-              transparent
-              animationType="fade"
-              onRequestClose={() => setShowDeathPicker(false)}
-            >
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: "rgba(0,0,0,0.5)",
-                  alignItems: "center",
-                  justifyContent: "center",
+            {showBirthPicker && Platform.OS === "android" && (
+              <DatePicker
+                value={tempBirth}
+                mode="date"
+                display="default"
+                maximumDate={new Date()}
+                onChange={(e, d) => {
+                  setShowBirthPicker(false);
+                  if (d) setBirth(dateToIso(d));
                 }}
+              />
+            )}
+
+            {showDeathPicker && Platform.OS === "ios" && (
+              <Modal
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowDeathPicker(false)}
               >
                 <View
                   style={{
-                    backgroundColor: "white",
-                    borderRadius: 12,
-                    padding: 16,
-                    width: "90%",
-                    borderWidth: 1,
-                    borderColor: "#ddd",
+                    flex: 1,
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: "600",
-                      marginBottom: 12,
-                      textAlign: "center",
-                    }}
-                  >
-                    {t("death_date")}
-                  </Text>
-                  <DateTimePicker
-                    value={tempDeath}
-                    mode="date"
-                    display="inline"
-                    onChange={(e, d) => {
-                      if (d) setTempDeath(d);
-                    }}
-                  />
                   <View
                     style={{
-                      flexDirection: "row",
-                      justifyContent: "flex-end",
-                      marginTop: 12,
-                      gap: 8,
+                      backgroundColor: "white",
+                      borderRadius: 12,
+                      padding: 16,
+                      width: "90%",
+                      borderWidth: 1,
+                      borderColor: "#ddd",
                     }}
                   >
-                    <Pressable
-                      onPress={() => setShowDeathPicker(false)}
-                      style={[btnStyle.ghost, { paddingHorizontal: 16 }]}
-                    >
-                      <Text>{t("cancel")}</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        setDeath(dateToIso(tempDeath));
-                        setShowDeathPicker(false);
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontWeight: "600",
+                        marginBottom: 12,
+                        textAlign: "center",
                       }}
-                      style={[btnStyle.primary, { paddingHorizontal: 16 }]}
                     >
-                      <Text style={btnStyle.text}>OK</Text>
-                    </Pressable>
+                      {t("death_date")}
+                    </Text>
+                    <DatePicker
+                      value={tempDeath}
+                      mode="date"
+                      display="inline"
+                      maximumDate={birth ? isoToDate(birth) : new Date()}
+                      onChange={(e, d) => {
+                        if (d) setTempDeath(d);
+                      }}
+                    />
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "flex-end",
+                        marginTop: 12,
+                        gap: 8,
+                      }}
+                    >
+                      <Pressable
+                        onPress={() => setShowDeathPicker(false)}
+                        style={[btnStyle.ghost, { paddingHorizontal: 16 }]}
+                      >
+                        <Text>{t("cancel")}</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => {
+                          setDeath(dateToIso(tempDeath));
+                          setShowDeathPicker(false);
+                        }}
+                        style={[btnStyle.primary, { paddingHorizontal: 16 }]}
+                      >
+                        <Text style={btnStyle.text}>OK</Text>
+                      </Pressable>
+                    </View>
                   </View>
                 </View>
-              </View>
-            </Modal>
-          )}
+              </Modal>
+            )}
 
-          {showDeathPicker && Platform.OS === "android" && (
-            <DateTimePicker
-              value={tempDeath}
-              mode="date"
-              display="default"
-              onChange={(e, d) => {
-                setShowDeathPicker(false);
-                if (d) setDeath(dateToIso(d));
-              }}
-            />
-          )}
+            {showDeathPicker && Platform.OS === "android" && (
+              <DatePicker
+                value={tempDeath}
+                mode="date"
+                display="default"
+                maximumDate={birth ? isoToDate(birth) : new Date()}
+                onChange={(e, d) => {
+                  setShowDeathPicker(false);
+                  if (d) setDeath(dateToIso(d));
+                }}
+              />
+            )}
+          </ScrollView>
 
           <View
             style={{

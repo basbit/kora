@@ -43,6 +43,18 @@
       },
       "newArchEnabled": true
     },
+    "web": {
+      "favicon": "./assets/kora.png",
+      "name": "КОРⱯ - Family Tree",
+      "shortName": "КОРⱯ",
+      "lang": "en",
+      "scope": "/",
+      "themeColor": "#fcf5e7",
+      "backgroundColor": "#fcf5e7",
+      "display": "standalone",
+      "orientation": "any",
+      "bundler": "metro"
+    },
     "plugins": [
       [
         "expo-build-properties",

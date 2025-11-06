@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StatusBar, View, Pressable, Text } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { StoreProvider } from './src/app/providers/StoreProvider';
 import { SettingsProvider, useSettings } from './src/app/providers/SettingsProvider';
 import { HomeScreen } from './src/pages/home/ui/HomeScreen';
@@ -12,13 +12,15 @@ import { colors } from './src/shared/config/theme/colors';
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SettingsProvider>
-        <StoreProvider>
-          <Shell />
-        </StoreProvider>
-      </SettingsProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SettingsProvider>
+          <StoreProvider>
+            <Shell />
+          </StoreProvider>
+        </SettingsProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 
