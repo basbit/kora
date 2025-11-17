@@ -10,13 +10,23 @@ jest.mock("react-native", () => ({
 
 jest.mock("expo-file-system", () => ({
   documentDirectory: "file:///mockDir/",
-  getInfoAsync: jest.fn().mockResolvedValue({ exists: true }),
+  getInfoAsync: jest.fn().mockResolvedValue({ exists: true, size: 1024 }),
   makeDirectoryAsync: jest.fn(),
   copyAsync: jest.fn(),
   readAsStringAsync: jest.fn(),
   writeAsStringAsync: jest.fn(),
   EncodingType: {
     Base64: "base64",
+  },
+}));
+
+jest.mock("expo-image-manipulator", () => ({
+  manipulateAsync: jest.fn((uri) =>
+    Promise.resolve({ uri: uri + "_optimized" }),
+  ),
+  SaveFormat: {
+    JPEG: "jpeg",
+    PNG: "png",
   },
 }));
 

@@ -38,15 +38,10 @@ const ParentEdge = React.memo<{
   from: string;
   to: string;
   getRealPosition: (id: string) => { x: number; y: number };
-  positions: Record<string, { x: number; y: number }>;
   color: string;
-}>(({ from, to, getRealPosition, positions, color }) => {
+}>(({ from, to, getRealPosition, color }) => {
   const p1 = getRealPosition(from);
   const p2 = getRealPosition(to);
-
-  if (!positions[from] || !positions[to]) {
-    return null;
-  }
 
   const deltaX = Math.abs(p1.x - p2.x);
   const threshold = 120;
@@ -68,7 +63,7 @@ const ParentEdge = React.memo<{
       endY = p2.y + AVATAR_SIZE / 2;
     }
 
-    const controlOffset = Math.abs(endX - startX) / 2;
+    const controlOffset = Math.min(Math.abs(endX - startX) / 2, 200);
     path = `M ${startX},${startY} C ${startX + (isP1Left ? controlOffset : -controlOffset)},${startY} ${endX + (isP1Left ? -controlOffset : controlOffset)},${endY} ${endX},${endY}`;
   } else {
     const isP1Higher = p1.y < p2.y;
@@ -85,7 +80,7 @@ const ParentEdge = React.memo<{
       endY = p2.y + CARD_HEIGHT;
     }
 
-    const controlOffset = Math.abs(endY - startY) / 2;
+    const controlOffset = Math.min(Math.abs(endY - startY) / 2, 200);
     path = `M ${startX},${startY} C ${startX},${startY + (isP1Higher ? controlOffset : -controlOffset)} ${endX},${endY + (isP1Higher ? -controlOffset : controlOffset)} ${endX},${endY}`;
   }
 
@@ -123,7 +118,7 @@ const SpouseEdge = React.memo<{
       endY = p2.y + CARD_HEIGHT;
     }
 
-    const controlOffset = Math.abs(endY - startY) / 2;
+    const controlOffset = Math.min(Math.abs(endY - startY) / 2, 200);
     path = `M ${startX},${startY} C ${startX},${startY + (isP1Higher ? controlOffset : -controlOffset)} ${endX},${endY + (isP1Higher ? -controlOffset : controlOffset)} ${endX},${endY}`;
   } else {
     const isP1Left = p1.x < p2.x;
@@ -140,7 +135,7 @@ const SpouseEdge = React.memo<{
       endY = p2.y + AVATAR_SIZE / 2;
     }
 
-    const controlOffset = Math.abs(endX - startX) / 2;
+    const controlOffset = Math.min(Math.abs(endX - startX) / 2, 200);
     path = `M ${startX},${startY} C ${startX + (isP1Left ? controlOffset : -controlOffset)},${startY} ${endX + (isP1Left ? -controlOffset : controlOffset)},${endY} ${endX},${endY}`;
   }
 
@@ -177,6 +172,30 @@ const TreeCanvas: React.FC<{ rootId: string }> = ({ rootId: _rootId }) => {
     [personsById],
   );
 
+  const svgBounds = useMemo(() => {
+    if (Object.keys(positions).length === 0) {
+      return { width: 2000, height: 2000 };
+    }
+
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+
+    Object.values(positions).forEach((pos) => {
+      minX = Math.min(minX, pos.x);
+      minY = Math.min(minY, pos.y);
+      maxX = Math.max(maxX, pos.x);
+      maxY = Math.max(maxY, pos.y);
+    });
+
+    const padding = 500;
+    return {
+      width: Math.max(2000, maxX - minX + CARD_WIDTH + padding * 2),
+      height: Math.max(2000, maxY - minY + CARD_HEIGHT + padding * 2),
+    };
+  }, [positions]);
+
   const getRealPosition = useCallback(
     (id: string) => {
       const basePos = positions[id] ?? { x: 0, y: 0 };
@@ -212,11 +231,17 @@ const TreeCanvas: React.FC<{ rootId: string }> = ({ rootId: _rootId }) => {
     const list: Array<{ from: string; to: string }> = [];
     for (const child of Object.values(personsById)) {
       for (const parentId of child.parentIds) {
-        if (personsById[parentId]) list.push({ from: parentId, to: child.id });
+        if (
+          personsById[parentId] &&
+          positions[parentId] &&
+          positions[child.id]
+        ) {
+          list.push({ from: parentId, to: child.id });
+        }
       }
     }
     return list;
-  }, [personsById]);
+  }, [personsById, positions]);
 
   const spouseEdges = useMemo(() => {
     const set = new Set<string>();
@@ -224,19 +249,25 @@ const TreeCanvas: React.FC<{ rootId: string }> = ({ rootId: _rootId }) => {
     for (const p of Object.values(personsById)) {
       for (const sid of p.spouseIds ?? []) {
         const key = [p.id, sid].sort().join("-");
-        if (set.has(key)) continue;
+        if (set.has(key) || !positions[p.id] || !positions[sid]) continue;
         set.add(key);
         list.push({ a: p.id, b: sid });
       }
     }
     return list;
-  }, [personsById]);
+  }, [personsById, positions]);
 
   return (
-    <View style={{ flex: 1, minHeight: 2000, minWidth: 2000 }}>
+    <View
+      style={{
+        flex: 1,
+        minHeight: svgBounds.height,
+        minWidth: svgBounds.width,
+      }}
+    >
       <Svg
-        width={2000}
-        height={2000}
+        width={svgBounds.width}
+        height={svgBounds.height}
         style={{
           position: "absolute",
           left: 0,
@@ -250,7 +281,6 @@ const TreeCanvas: React.FC<{ rootId: string }> = ({ rootId: _rootId }) => {
             from={from}
             to={to}
             getRealPosition={getRealPosition}
-            positions={positions}
             color={theme.parentLink}
           />
         ))}
@@ -298,6 +328,7 @@ const AbsoluteNode: React.FC<{
 
   const dragStart = useRef({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
+  const wasDraggedRef = useRef(false);
 
   const pan = useRef(
     PanResponder.create({
@@ -307,6 +338,7 @@ const AbsoluteNode: React.FC<{
       },
       onPanResponderGrant: (_evt, _gesture) => {
         isDraggingRef.current = true;
+        wasDraggedRef.current = false;
         dragStart.current = {
           x: storePosRef.current.x,
           y: storePosRef.current.y,
@@ -314,6 +346,7 @@ const AbsoluteNode: React.FC<{
         setIsDragging(true);
       },
       onPanResponderMove: (_evt, gesture) => {
+        wasDraggedRef.current = true;
         setOffsetX(gesture.dx);
         setOffsetY(gesture.dy);
         onDragOffset({ x: gesture.dx, y: gesture.dy });
@@ -328,6 +361,10 @@ const AbsoluteNode: React.FC<{
           isDraggingRef.current = false;
           setIsDragging(false);
           onDragOffset({ x: 0, y: 0 });
+
+          setTimeout(() => {
+            wasDraggedRef.current = false;
+          }, 100);
         }
       },
       onPanResponderTerminate: (_evt, gesture) => {
@@ -340,13 +377,17 @@ const AbsoluteNode: React.FC<{
           isDraggingRef.current = false;
           setIsDragging(false);
           onDragOffset({ x: 0, y: 0 });
+
+          setTimeout(() => {
+            wasDraggedRef.current = false;
+          }, 100);
         }
       },
     }),
   ).current;
 
   const handlePress = () => {
-    if (!isDraggingRef.current) {
+    if (!wasDraggedRef.current) {
       setSelected(true);
     }
   };
@@ -358,6 +399,7 @@ const AbsoluteNode: React.FC<{
         left: storePos.x + offsetX,
         top: storePos.y + offsetY,
       }}
+      // eslint-disable-next-line react/jsx-props-no-spreading
       {...pan.panHandlers}
     >
       <NodeCard person={person} onPress={handlePress} />

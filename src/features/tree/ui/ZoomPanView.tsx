@@ -27,6 +27,7 @@ import type {
 const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { isDragging: isNodeDragging } = useDragCtx();
   const [scale, setScale] = useState(1);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
@@ -79,12 +80,13 @@ const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
   }, [scale]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (isNodeDragging) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX - offsetX, y: e.clientY - offsetY });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
+    if (isDragging && !isNodeDragging) {
       setOffsetX(e.clientX - dragStart.x);
       setOffsetY(e.clientY - dragStart.y);
     }
@@ -96,6 +98,12 @@ const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
       scheduleStateSave();
     }
   };
+
+  useEffect(() => {
+    if (isNodeDragging && isDragging) {
+      setIsDragging(false);
+    }
+  }, [isNodeDragging, isDragging]);
 
   const zoomOut = () => {
     const newScale = Math.max(0.4, scale - 0.1);
