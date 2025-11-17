@@ -111,6 +111,7 @@ export const AddPersonModal: React.FC<{
   const [death, setDeath] = useState("");
   const [comment, setComment] = useState("");
   const [newPhotoUri, setNewPhotoUri] = useState<string | undefined>(undefined);
+  const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
   const [parent1Id, setParent1Id] = useState<string | undefined>(undefined);
   const [parent2Id, setParent2Id] = useState<string | undefined>(undefined);
   const [parentQuery, setParentQuery] = useState("");
@@ -128,6 +129,7 @@ export const AddPersonModal: React.FC<{
     setDeath(isoToDisplay(editPerson.deathDateISO));
     setComment(editPerson.comment || "");
     setNewPhotoUri(editPerson.photoUri);
+    setGalleryPhotos(editPerson.photoGallery || []);
     setParent1Id(editPerson.parentIds[0]);
     setParent2Id(editPerson.parentIds[1]);
     setSpouseId(editPerson.spouseIds?.[0]);
@@ -140,6 +142,7 @@ export const AddPersonModal: React.FC<{
     setDeath("");
     setComment("");
     setNewPhotoUri(undefined);
+    setGalleryPhotos([]);
     setParent1Id(undefined);
     setParent2Id(undefined);
     setSpouseId(undefined);
@@ -231,6 +234,39 @@ export const AddPersonModal: React.FC<{
       setNewPhotoUri(res.assets[0].uri);
   };
 
+  const pickGalleryPhotos = async () => {
+    if (Platform.OS === "web") {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.multiple = true;
+      input.onchange = (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        const files = Array.from(target.files || []);
+        files.forEach((file) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const dataUrl = event.target?.result as string;
+            setGalleryPhotos((prev) => [...prev, dataUrl]);
+          };
+          reader.readAsDataURL(file);
+        });
+      };
+      input.click();
+      return;
+    }
+
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.9,
+      allowsMultipleSelection: true,
+    });
+    if (!res.canceled && res.assets) {
+      const uris = res.assets.map((asset) => asset.uri);
+      setGalleryPhotos((prev) => [...prev, ...uris]);
+    }
+  };
+
   const createPersonId = () =>
     addPerson({
       firstName: firstName.trim(),
@@ -248,7 +284,30 @@ export const AddPersonModal: React.FC<{
       return undefined;
     }
   };
-  const finalizePerson = (id: string, photo?: string) =>
+
+  const maybeCopyGalleryPhotos = async (id: string) => {
+    const copiedPhotos: string[] = [];
+    for (let i = 0; i < galleryPhotos.length; i++) {
+      const uri = galleryPhotos[i];
+      if (editPerson?.photoGallery?.includes(uri)) {
+        copiedPhotos.push(uri);
+        continue;
+      }
+      try {
+        const timestamp = Date.now();
+        const copied = await copyImageToAppDir(
+          `${id}_gallery_${timestamp}_${i}`,
+          uri,
+        );
+        copiedPhotos.push(copied);
+      } catch (error) {
+        console.error("Failed to copy gallery photo:", error);
+      }
+    }
+    return copiedPhotos;
+  };
+
+  const finalizePerson = (id: string, photo?: string, gallery?: string[]) =>
     updatePerson({
       id,
       firstName: firstName.trim(),
@@ -257,6 +316,7 @@ export const AddPersonModal: React.FC<{
       deathDateISO: displayToIso(death),
       comment: comment || undefined,
       photoUri: photo,
+      photoGallery: gallery,
       parentIds: [],
       spouseIds: [],
       createdAt: Date.now(),
@@ -301,6 +361,7 @@ export const AddPersonModal: React.FC<{
   const handleEditPerson = useCallback(
     async (person: Person) => {
       const photo = await maybeCopyPhoto(person.id);
+      const gallery = await maybeCopyGalleryPhotos(person.id);
 
       const newParentIds = [parent1Id, parent2Id].filter(Boolean) as string[];
       const newSpouseIds = spouseId ? [spouseId] : [];
@@ -313,6 +374,7 @@ export const AddPersonModal: React.FC<{
         deathDateISO: displayToIso(death),
         comment: comment || undefined,
         photoUri: photo,
+        photoGallery: gallery,
         parentIds: newParentIds,
         spouseIds: newSpouseIds,
       });
@@ -327,6 +389,7 @@ export const AddPersonModal: React.FC<{
       parent2Id,
       spouseId,
       newPhotoUri,
+      galleryPhotos,
       updatePerson,
     ],
   );
@@ -334,7 +397,8 @@ export const AddPersonModal: React.FC<{
   const handleCreatePerson = useCallback(async () => {
     const id = createPersonId();
     const photo = await maybeCopyPhoto(id);
-    finalizePerson(id, photo);
+    const gallery = await maybeCopyGalleryPhotos(id);
+    finalizePerson(id, photo, gallery);
     linkParents(id);
     linkSpouse(id);
     placeInitially(id);
@@ -348,6 +412,7 @@ export const AddPersonModal: React.FC<{
     parent2Id,
     spouseId,
     newPhotoUri,
+    galleryPhotos,
     editPerson,
     personsById,
     positions,
@@ -460,6 +525,78 @@ export const AddPersonModal: React.FC<{
               style={[inputStyle, { height: 80 }]}
               multiline
             />
+
+            <View style={{ gap: 8 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ color: "#555" }}>{t("photo_gallery")}</Text>
+                <Pressable
+                  onPress={pickGalleryPhotos}
+                  style={[btnStyle.ghost, { paddingHorizontal: 12 }]}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      gap: 4,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons name="add" size={20} color="#5e35b1" />
+                    <Text style={{ color: "#5e35b1" }}>{t("add_photos")}</Text>
+                  </View>
+                </Pressable>
+              </View>
+
+              {galleryPhotos.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{
+                    flexDirection: "row",
+                    gap: 8,
+                  }}
+                >
+                  {galleryPhotos.map((uri, index) => (
+                    <View key={index} style={{ position: "relative" }}>
+                      <Image
+                        source={{ uri }}
+                        style={{
+                          width: 80,
+                          height: 80,
+                          borderRadius: 8,
+                          marginRight: 8,
+                        }}
+                      />
+                      <Pressable
+                        onPress={() => {
+                          setGalleryPhotos((prev) =>
+                            prev.filter((_, i) => i !== index),
+                          );
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: -8,
+                          right: 0,
+                          backgroundColor: "rgba(0,0,0,0.7)",
+                          borderRadius: 12,
+                          width: 24,
+                          height: 24,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Ionicons name="close" size={16} color="white" />
+                      </Pressable>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
 
             <Text style={{ color: "#555" }}>{t("parent1_optional")}</Text>
             <View

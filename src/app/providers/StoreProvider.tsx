@@ -419,6 +419,10 @@ function normalizePerson(p: Person): Person {
   const lastName = p.lastName ?? undefined;
   const parentIds = Array.isArray(p.parentIds) ? p.parentIds : [];
   const spouseIds = Array.isArray(p.spouseIds) ? p.spouseIds : [];
+  const photoGallery =
+    Array.isArray(p.photoGallery) && p.photoGallery.length > 0
+      ? p.photoGallery
+      : undefined;
   return {
     id: p.id,
     firstName: firstName,
@@ -427,6 +431,7 @@ function normalizePerson(p: Person): Person {
     deathDateISO: p.deathDateISO,
     comment: p.comment,
     photoUri: p.photoUri,
+    photoGallery,
     parentIds,
     spouseIds,
     createdAt: p.createdAt ?? Date.now(),

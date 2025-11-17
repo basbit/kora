@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View, Text, Pressable } from "react-native";
 
 import { colors } from "@shared/config/theme/colors";
+
+import type { Person } from "@entities/person/model/types";
 
 import { TreeView } from "@features/tree/ui/TreeView";
 
@@ -26,6 +28,11 @@ export function HomeScreen() {
   const effectiveRootId = rootId ?? roots[0]?.id;
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<Person | undefined>();
+
+  const handleRequestEditPerson = useCallback((person: Person) => {
+    setEditingPerson(person);
+  }, []);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
@@ -33,7 +40,10 @@ export function HomeScreen() {
 
       <View style={{ flex: 1, padding: 12 }}>
         {effectiveRootId ? (
-          <TreeView rootId={effectiveRootId} />
+          <TreeView
+            rootId={effectiveRootId}
+            onRequestEditPerson={handleRequestEditPerson}
+          />
         ) : (
           <Text style={{ padding: 16, color: theme.secondary }}>
             {t("no_persons_prompt")}
@@ -66,6 +76,11 @@ export function HomeScreen() {
       <AddPersonModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
+      />
+      <AddPersonModal
+        visible={!!editingPerson}
+        onClose={() => setEditingPerson(undefined)}
+        editPerson={editingPerson}
       />
     </View>
   );

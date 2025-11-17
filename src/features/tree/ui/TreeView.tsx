@@ -20,9 +20,10 @@ import {
 import Svg, { Path } from "react-native-svg";
 
 import { colors } from "@shared/config/theme/colors";
+import { ImageGalleryViewer } from "@shared/ui/ImageGalleryViewer";
 import { NodeCard } from "@shared/ui/NodeCard";
 
-import { AddPersonModal } from "@pages/home/ui/AddPersonModal";
+import type { Person } from "@entities/person/model/types";
 
 import { useSettings } from "@app/providers/SettingsProvider";
 import { useTreeStore } from "@app/providers/StoreProvider";
@@ -144,7 +145,15 @@ const SpouseEdge = React.memo<{
 
 SpouseEdge.displayName = "SpouseEdge";
 
-export const TreeView: React.FC<{ rootId: string }> = ({ rootId }) => {
+type TreeViewProps = {
+  rootId: string;
+  onRequestEditPerson?: (person: Person) => void;
+};
+
+export const TreeView: React.FC<TreeViewProps> = ({
+  rootId,
+  onRequestEditPerson,
+}) => {
   const { personsById } = useTreeStore();
   const root = personsById[rootId];
   if (!root) return null;
@@ -152,13 +161,16 @@ export const TreeView: React.FC<{ rootId: string }> = ({ rootId }) => {
   return (
     <DragProvider>
       <ZoomPanView>
-        <TreeCanvas rootId={rootId} />
+        <TreeCanvas rootId={rootId} onRequestEditPerson={onRequestEditPerson} />
       </ZoomPanView>
     </DragProvider>
   );
 };
 
-const TreeCanvas: React.FC<{ rootId: string }> = ({ rootId: _rootId }) => {
+const TreeCanvas: React.FC<{
+  rootId: string;
+  onRequestEditPerson?: (person: Person) => void;
+}> = ({ rootId: _rootId, onRequestEditPerson }) => {
   const { personsById, positions } = useTreeStore();
   const { currentTheme } = useSettings();
   const theme = currentTheme === "dark" ? colors.dark : colors.light;
@@ -166,6 +178,10 @@ const TreeCanvas: React.FC<{ rootId: string }> = ({ rootId: _rootId }) => {
   const dragOffsetsRef = useRef<Record<string, { x: number; y: number }>>({});
   const [, forceUpdate] = useState({});
   const rafIdRef = useRef<number | null>(null);
+
+  const [galleryVisible, setGalleryVisible] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
 
   const nodes: string[] = useMemo(
     () => Object.keys(personsById),
@@ -300,8 +316,21 @@ const TreeCanvas: React.FC<{ rootId: string }> = ({ rootId: _rootId }) => {
           key={id}
           id={id}
           onDragOffset={(offset) => handleDragOffset(id, offset)}
+          onOpenGallery={(images, initialIndex) => {
+            setGalleryImages(images);
+            setGalleryInitialIndex(initialIndex);
+            setGalleryVisible(true);
+          }}
+          onRequestEditPerson={onRequestEditPerson}
         />
       ))}
+
+      <ImageGalleryViewer
+        visible={galleryVisible}
+        images={galleryImages}
+        initialIndex={galleryInitialIndex}
+        onClose={() => setGalleryVisible(false)}
+      />
     </View>
   );
 };
@@ -309,371 +338,445 @@ const TreeCanvas: React.FC<{ rootId: string }> = ({ rootId: _rootId }) => {
 const AbsoluteNode: React.FC<{
   id: string;
   onDragOffset: (offset: { x: number; y: number }) => void;
-}> = React.memo(({ id, onDragOffset }) => {
-  const { t } = useTranslation();
-  const { personsById, positions, setNodePosition, removePerson } =
-    useTreeStore();
-  const { setIsDragging } = useDragCtx();
-  const { currentTheme } = useSettings();
-  const theme = currentTheme === "dark" ? colors.dark : colors.light;
-  const person = personsById[id];
-  const storePos = positions[id] ?? { x: 0, y: 0 };
+  onOpenGallery: (images: string[], initialIndex: number) => void;
+  onRequestEditPerson?: (person: Person) => void;
+}> = React.memo(
+  // eslint-disable-next-line complexity
+  ({ id, onDragOffset, onOpenGallery, onRequestEditPerson }) => {
+    const { t } = useTranslation();
+    const { personsById, positions, setNodePosition, removePerson } =
+      useTreeStore();
+    const { setIsDragging } = useDragCtx();
+    const { currentTheme } = useSettings();
+    const theme = currentTheme === "dark" ? colors.dark : colors.light;
+    const person = personsById[id];
+    const storePos = positions[id] ?? { x: 0, y: 0 };
 
-  const [offsetX, setOffsetX] = useState(0);
-  const [offsetY, setOffsetY] = useState(0);
-  const [selected, setSelected] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const storePosRef = useRef(storePos);
-  storePosRef.current = storePos;
+    const [offsetX, setOffsetX] = useState(0);
+    const [offsetY, setOffsetY] = useState(0);
+    const [selected, setSelected] = useState(false);
+    const storePosRef = useRef(storePos);
+    storePosRef.current = storePos;
 
-  const dragStart = useRef({ x: 0, y: 0 });
-  const isDraggingRef = useRef(false);
-  const wasDraggedRef = useRef(false);
+    const dragStart = useRef({ x: 0, y: 0 });
+    const isDraggingRef = useRef(false);
+    const wasDraggedRef = useRef(false);
 
-  const pan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_evt, gesture) => {
-        return Math.abs(gesture.dx) + Math.abs(gesture.dy) > 5;
-      },
-      onPanResponderGrant: (_evt, _gesture) => {
-        isDraggingRef.current = true;
-        wasDraggedRef.current = false;
-        dragStart.current = {
-          x: storePosRef.current.x,
-          y: storePosRef.current.y,
-        };
-        setIsDragging(true);
-      },
-      onPanResponderMove: (_evt, gesture) => {
-        wasDraggedRef.current = true;
-        setOffsetX(gesture.dx);
-        setOffsetY(gesture.dy);
-        onDragOffset({ x: gesture.dx, y: gesture.dy });
-      },
-      onPanResponderRelease: (_evt, gesture) => {
-        if (isDraggingRef.current) {
-          const newX = dragStart.current.x + gesture.dx;
-          const newY = dragStart.current.y + gesture.dy;
-          setNodePosition(id, newX, newY);
-          setOffsetX(0);
-          setOffsetY(0);
-          isDraggingRef.current = false;
-          setIsDragging(false);
-          onDragOffset({ x: 0, y: 0 });
+    const pan = useRef(
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_evt, gesture) => {
+          return Math.abs(gesture.dx) + Math.abs(gesture.dy) > 5;
+        },
+        onPanResponderGrant: (_evt, _gesture) => {
+          isDraggingRef.current = true;
+          wasDraggedRef.current = false;
+          dragStart.current = {
+            x: storePosRef.current.x,
+            y: storePosRef.current.y,
+          };
+          setIsDragging(true);
+        },
+        onPanResponderMove: (_evt, gesture) => {
+          wasDraggedRef.current = true;
+          setOffsetX(gesture.dx);
+          setOffsetY(gesture.dy);
+          onDragOffset({ x: gesture.dx, y: gesture.dy });
+        },
+        onPanResponderRelease: (_evt, gesture) => {
+          if (isDraggingRef.current) {
+            const newX = dragStart.current.x + gesture.dx;
+            const newY = dragStart.current.y + gesture.dy;
+            setNodePosition(id, newX, newY);
+            setOffsetX(0);
+            setOffsetY(0);
+            isDraggingRef.current = false;
+            setIsDragging(false);
+            onDragOffset({ x: 0, y: 0 });
 
-          setTimeout(() => {
-            wasDraggedRef.current = false;
-          }, 100);
-        }
-      },
-      onPanResponderTerminate: (_evt, gesture) => {
-        if (isDraggingRef.current) {
-          const newX = dragStart.current.x + gesture.dx;
-          const newY = dragStart.current.y + gesture.dy;
-          setNodePosition(id, newX, newY);
-          setOffsetX(0);
-          setOffsetY(0);
-          isDraggingRef.current = false;
-          setIsDragging(false);
-          onDragOffset({ x: 0, y: 0 });
+            setTimeout(() => {
+              wasDraggedRef.current = false;
+            }, 100);
+          }
+        },
+        onPanResponderTerminate: (_evt, gesture) => {
+          if (isDraggingRef.current) {
+            const newX = dragStart.current.x + gesture.dx;
+            const newY = dragStart.current.y + gesture.dy;
+            setNodePosition(id, newX, newY);
+            setOffsetX(0);
+            setOffsetY(0);
+            isDraggingRef.current = false;
+            setIsDragging(false);
+            onDragOffset({ x: 0, y: 0 });
 
-          setTimeout(() => {
-            wasDraggedRef.current = false;
-          }, 100);
-        }
-      },
-    }),
-  ).current;
+            setTimeout(() => {
+              wasDraggedRef.current = false;
+            }, 100);
+          }
+        },
+      }),
+    ).current;
 
-  const handlePress = () => {
-    if (!wasDraggedRef.current) {
-      setSelected(true);
-    }
-  };
+    const handlePress = () => {
+      if (!wasDraggedRef.current) {
+        setSelected(true);
+      }
+    };
 
-  return (
-    <View
-      style={{
-        position: "absolute",
-        left: storePos.x + offsetX,
-        top: storePos.y + offsetY,
-      }}
-      // eslint-disable-next-line react/jsx-props-no-spreading
-      {...pan.panHandlers}
-    >
-      <NodeCard person={person} onPress={handlePress} />
-      <Modal
-        visible={selected}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSelected(false)}
+    const handleImagePress = () => {
+      const images: string[] = [];
+      if (person.photoUri) {
+        images.push(person.photoUri);
+      }
+      if (person.photoGallery) {
+        images.push(...person.photoGallery);
+      }
+      if (images.length > 0) {
+        onOpenGallery(images, 0);
+      }
+    };
+
+    return (
+      <View
+        style={{
+          position: "absolute",
+          left: storePos.x + offsetX,
+          top: storePos.y + offsetY,
+        }}
+        // eslint-disable-next-line react/jsx-props-no-spreading
+        {...pan.panHandlers}
       >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.45)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
+        <NodeCard person={person} onPress={handlePress} />
+        <Modal
+          visible={selected}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setSelected(false)}
         >
           <View
             style={{
-              backgroundColor: theme.surface,
-              borderRadius: 10,
-              width: "92%",
-              maxHeight: "85%",
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.45)",
+              justifyContent: "center",
+              alignItems: "center",
             }}
           >
-            <ScrollView style={{ padding: 16 }}>
-              <View style={{ alignItems: "center", marginBottom: 16 }}>
-                {person.photoUri ? (
-                  <Image
-                    source={{ uri: person.photoUri }}
-                    style={{ width: 120, height: 120, borderRadius: 60 }}
-                  />
-                ) : (
+            <View
+              style={{
+                backgroundColor: theme.surface,
+                borderRadius: 10,
+                width: "92%",
+                maxHeight: "85%",
+              }}
+            >
+              <ScrollView style={{ padding: 16 }}>
+                <Pressable
+                  onPress={handleImagePress}
+                  style={{ alignItems: "center", marginBottom: 16 }}
+                >
+                  {person.photoUri ? (
+                    <Image
+                      source={{ uri: person.photoUri }}
+                      style={{ width: 120, height: 120, borderRadius: 60 }}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        width: 120,
+                        height: 120,
+                        borderRadius: 60,
+                        backgroundColor: theme.avatarBg,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Ionicons
+                        name="person"
+                        size={60}
+                        color={theme.avatarIcon}
+                      />
+                    </View>
+                  )}
+                </Pressable>
+
+                <Text
+                  style={{
+                    fontSize: 20,
+                    fontWeight: "700",
+                    textAlign: "center",
+                    marginBottom: 8,
+                    color: theme.primary,
+                  }}
+                >
+                  {[person.firstName, person.lastName]
+                    .filter(Boolean)
+                    .join(" ") || person.name}
+                </Text>
+
+                {person.birthDateISO || person.deathDateISO ? (
                   <View
                     style={{
-                      width: 120,
-                      height: 120,
-                      borderRadius: 60,
-                      backgroundColor: theme.avatarBg,
-                      alignItems: "center",
-                      justifyContent: "center",
+                      backgroundColor: theme.surfaceVariant,
+                      padding: 12,
+                      borderRadius: 8,
+                      marginBottom: 12,
                     }}
                   >
-                    <Ionicons
-                      name="person"
-                      size={60}
-                      color={theme.avatarIcon}
-                    />
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "600",
+                        color: theme.secondary,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {t("life_dates")}
+                    </Text>
+                    {person.birthDateISO && (
+                      <Text style={{ fontSize: 14, color: theme.primary }}>
+                        {t("born")}: {person.birthDateISO}
+                      </Text>
+                    )}
+                    {person.deathDateISO && (
+                      <Text style={{ fontSize: 14, color: theme.primary }}>
+                        {t("died")}: {person.deathDateISO}
+                      </Text>
+                    )}
+                  </View>
+                ) : null}
+
+                {person.parentIds && person.parentIds.length > 0 && (
+                  <View
+                    style={{
+                      backgroundColor: theme.surfaceVariant,
+                      padding: 12,
+                      borderRadius: 8,
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "600",
+                        color: theme.secondary,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {t("parents_label")}
+                    </Text>
+                    {person.parentIds.map((parentId) => {
+                      const parent = personsById[parentId];
+                      if (!parent) return null;
+                      return (
+                        <Text
+                          key={parentId}
+                          style={{ fontSize: 14, color: theme.primary }}
+                        >
+                          {[parent.firstName, parent.lastName]
+                            .filter(Boolean)
+                            .join(" ") || parent.name}
+                        </Text>
+                      );
+                    })}
                   </View>
                 )}
-              </View>
 
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: "700",
-                  textAlign: "center",
-                  marginBottom: 8,
-                  color: theme.primary,
-                }}
-              >
-                {[person.firstName, person.lastName]
-                  .filter(Boolean)
-                  .join(" ") || person.name}
-              </Text>
-
-              {person.birthDateISO || person.deathDateISO ? (
-                <View
-                  style={{
-                    backgroundColor: theme.surfaceVariant,
-                    padding: 12,
-                    borderRadius: 8,
-                    marginBottom: 12,
-                  }}
-                >
-                  <Text
+                {person.spouseIds && person.spouseIds.length > 0 && (
+                  <View
                     style={{
-                      fontSize: 12,
-                      fontWeight: "600",
-                      color: theme.secondary,
-                      marginBottom: 4,
-                    }}
-                  >
-                    {t("life_dates")}
-                  </Text>
-                  {person.birthDateISO && (
-                    <Text style={{ fontSize: 14, color: theme.primary }}>
-                      {t("born")}: {person.birthDateISO}
-                    </Text>
-                  )}
-                  {person.deathDateISO && (
-                    <Text style={{ fontSize: 14, color: theme.primary }}>
-                      {t("died")}: {person.deathDateISO}
-                    </Text>
-                  )}
-                </View>
-              ) : null}
-
-              {person.parentIds && person.parentIds.length > 0 && (
-                <View
-                  style={{
-                    backgroundColor: theme.surfaceVariant,
-                    padding: 12,
-                    borderRadius: 8,
-                    marginBottom: 12,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: "600",
-                      color: theme.secondary,
-                      marginBottom: 4,
-                    }}
-                  >
-                    {t("parents_label")}
-                  </Text>
-                  {person.parentIds.map((parentId) => {
-                    const parent = personsById[parentId];
-                    if (!parent) return null;
-                    return (
-                      <Text
-                        key={parentId}
-                        style={{ fontSize: 14, color: theme.primary }}
-                      >
-                        {[parent.firstName, parent.lastName]
-                          .filter(Boolean)
-                          .join(" ") || parent.name}
-                      </Text>
-                    );
-                  })}
-                </View>
-              )}
-
-              {person.spouseIds && person.spouseIds.length > 0 && (
-                <View
-                  style={{
-                    backgroundColor: theme.surfaceVariant,
-                    padding: 12,
-                    borderRadius: 8,
-                    marginBottom: 12,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: "600",
-                      color: theme.secondary,
-                      marginBottom: 4,
-                    }}
-                  >
-                    {t("spouse_label")}
-                  </Text>
-                  {person.spouseIds.map((spouseId) => {
-                    const spouse = personsById[spouseId];
-                    if (!spouse) return null;
-                    return (
-                      <Text
-                        key={spouseId}
-                        style={{ fontSize: 14, color: theme.primary }}
-                      >
-                        {[spouse.firstName, spouse.lastName]
-                          .filter(Boolean)
-                          .join(" ") || spouse.name}
-                      </Text>
-                    );
-                  })}
-                </View>
-              )}
-
-              {person.comment ? (
-                <View
-                  style={{
-                    backgroundColor: theme.surfaceVariant,
-                    padding: 12,
-                    borderRadius: 8,
-                    marginBottom: 12,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: "600",
-                      color: theme.secondary,
-                      marginBottom: 4,
-                    }}
-                  >
-                    {t("comment_label")}
-                  </Text>
-                  <Text style={{ fontSize: 14, color: theme.primary }}>
-                    {person.comment}
-                  </Text>
-                </View>
-              ) : null}
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginTop: 4,
-                  gap: 8,
-                }}
-              >
-                <Pressable
-                  onPress={() => {
-                    Alert.alert(
-                      t("delete_confirm_title"),
-                      t("delete_confirm_message", { name: person.firstName }),
-                      [
-                        { text: t("cancel"), style: "cancel" },
-                        {
-                          text: t("delete_label"),
-                          style: "destructive",
-                          onPress: () => {
-                            removePerson(id);
-                            setSelected(false);
-                          },
-                        },
-                      ],
-                    );
-                  }}
-                  style={{
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    backgroundColor: theme.error,
-                    borderRadius: 8,
-                  }}
-                >
-                  <Text style={{ color: "white", fontWeight: "600" }}>
-                    {t("delete_label")}
-                  </Text>
-                </Pressable>
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                  <Pressable
-                    onPress={() => setSelected(false)}
-                    style={{
-                      paddingVertical: 8,
-                      paddingHorizontal: 12,
                       backgroundColor: theme.surfaceVariant,
+                      padding: 12,
                       borderRadius: 8,
+                      marginBottom: 12,
                     }}
                   >
-                    <Text style={{ fontWeight: "600", color: theme.primary }}>
-                      {t("close_label")}
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "600",
+                        color: theme.secondary,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {t("spouse_label")}
                     </Text>
-                  </Pressable>
+                    {person.spouseIds.map((spouseId) => {
+                      const spouse = personsById[spouseId];
+                      if (!spouse) return null;
+                      return (
+                        <Text
+                          key={spouseId}
+                          style={{ fontSize: 14, color: theme.primary }}
+                        >
+                          {[spouse.firstName, spouse.lastName]
+                            .filter(Boolean)
+                            .join(" ") || spouse.name}
+                        </Text>
+                      );
+                    })}
+                  </View>
+                )}
+
+                {person.comment ? (
+                  <View
+                    style={{
+                      backgroundColor: theme.surfaceVariant,
+                      padding: 12,
+                      borderRadius: 8,
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "600",
+                        color: theme.secondary,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {t("comment_label")}
+                    </Text>
+                    <Text style={{ fontSize: 14, color: theme.primary }}>
+                      {person.comment}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {person.photoGallery && person.photoGallery.length > 0 && (
+                  <View
+                    style={{
+                      backgroundColor: theme.surfaceVariant,
+                      padding: 12,
+                      borderRadius: 8,
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "600",
+                        color: theme.secondary,
+                        marginBottom: 8,
+                      }}
+                    >
+                      {t("photo_gallery")}
+                    </Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={{ marginHorizontal: -4 }}
+                    >
+                      {person.photoGallery.map((uri, index) => (
+                        <Pressable
+                          key={index}
+                          onPress={() => {
+                            const images: string[] = [];
+                            if (person.photoUri) {
+                              images.push(person.photoUri);
+                            }
+                            if (person.photoGallery) {
+                              images.push(...person.photoGallery);
+                            }
+                            onOpenGallery(
+                              images,
+                              person.photoUri ? index + 1 : index,
+                            );
+                          }}
+                          style={{ marginHorizontal: 4 }}
+                        >
+                          <Image
+                            source={{ uri }}
+                            style={{
+                              width: 80,
+                              height: 80,
+                              borderRadius: 8,
+                            }}
+                          />
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    marginTop: 4,
+                    gap: 8,
+                  }}
+                >
                   <Pressable
                     onPress={() => {
-                      setSelected(false);
-                      setEditing(true);
+                      Alert.alert(
+                        t("delete_confirm_title"),
+                        t("delete_confirm_message", { name: person.firstName }),
+                        [
+                          { text: t("cancel"), style: "cancel" },
+                          {
+                            text: t("delete_label"),
+                            style: "destructive",
+                            onPress: () => {
+                              removePerson(id);
+                              setSelected(false);
+                            },
+                          },
+                        ],
+                      );
                     }}
                     style={{
                       paddingVertical: 8,
                       paddingHorizontal: 12,
-                      backgroundColor: theme.accent,
+                      backgroundColor: theme.error,
                       borderRadius: 8,
                     }}
                   >
                     <Text style={{ color: "white", fontWeight: "600" }}>
-                      {t("edit_label")}
+                      {t("delete_label")}
                     </Text>
                   </Pressable>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <Pressable
+                      onPress={() => setSelected(false)}
+                      style={{
+                        paddingVertical: 8,
+                        paddingHorizontal: 12,
+                        backgroundColor: theme.surfaceVariant,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ fontWeight: "600", color: theme.primary }}>
+                        {t("close_label")}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        setSelected(false);
+                        if (person) {
+                          onRequestEditPerson?.(person);
+                        }
+                      }}
+                      style={{
+                        paddingVertical: 8,
+                        paddingHorizontal: 12,
+                        backgroundColor: theme.accent,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ color: "white", fontWeight: "600" }}>
+                        {t("edit_label")}
+                      </Text>
+                    </Pressable>
+                  </View>
                 </View>
-              </View>
-            </ScrollView>
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
-      <AddPersonModal
-        visible={editing}
-        onClose={() => setEditing(false)}
-        editPerson={person}
-      />
-    </View>
-  );
-});
+        </Modal>
+      </View>
+    );
+  },
+);
 
 AbsoluteNode.displayName = "AbsoluteNode";

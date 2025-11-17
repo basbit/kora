@@ -6,6 +6,7 @@ export type Person = {
   deathDateISO?: string;
   comment?: string;
   photoUri?: string;
+  photoGallery?: string[];
   parentIds: string[];
   spouseIds?: string[];
   name?: string;
