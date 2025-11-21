@@ -86,7 +86,10 @@ export const NodeCard: React.FC<{
         ) : null}
       </View>
       {dates ? (
-        <Text style={{ fontSize: 12, color: secondary, textAlign: "center" }} numberOfLines={1}>
+        <Text
+          style={{ fontSize: 12, color: secondary, textAlign: "center" }}
+          numberOfLines={1}
+        >
           {dates}
         </Text>
       ) : null}

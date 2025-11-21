@@ -344,7 +344,6 @@ export async function importTreeArchive(): Promise<string | null> {
 }
 
 /* eslint-enable complexity */
-
 function getExtensionFromUri(uri: string): string {
   try {
     const clean = uri.split("?")[0];

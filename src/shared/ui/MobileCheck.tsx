@@ -27,7 +27,10 @@ export const MobileCheck: React.FC<MobileCheckProps> = ({ children }) => {
         }
 
         const userAgent = navigator.userAgent || "";
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+        const isMobile =
+          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            userAgent,
+          );
 
         if (isMobile) {
           setShowMobilePrompt(true);
@@ -55,7 +58,10 @@ export const MobileCheck: React.FC<MobileCheckProps> = ({ children }) => {
     if (isIOS) {
       window.open("https://apps.apple.com/app/id/com.rbaster.kora", "_blank");
     } else if (isAndroid) {
-      window.open("https://play.google.com/store/apps/details?id=com.rbaster.kora", "_blank");
+      window.open(
+        "https://play.google.com/store/apps/details?id=com.rbaster.kora",
+        "_blank",
+      );
     }
   };
 
@@ -63,6 +69,7 @@ export const MobileCheck: React.FC<MobileCheckProps> = ({ children }) => {
     try {
       localStorage.setItem(STORAGE_KEY, "web");
     } catch {
+      // Ignore localStorage errors
     }
     setShowMobilePrompt(false);
   };
