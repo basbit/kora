@@ -5,6 +5,7 @@ import { StoreProvider } from './src/app/providers/StoreProvider';
 import { SettingsProvider, useSettings } from './src/app/providers/SettingsProvider';
 import { HomeScreen } from './src/pages/home/ui/HomeScreen';
 import { SettingsScreen } from './src/pages/settings/ui/SettingsScreen';
+import { MobileCheck } from './src/shared/ui/MobileCheck';
 import './src/shared/config/i18n';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -14,11 +15,13 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <SettingsProvider>
-          <StoreProvider>
-            <Shell />
-          </StoreProvider>
-        </SettingsProvider>
+        <MobileCheck>
+          <SettingsProvider>
+            <StoreProvider>
+              <Shell />
+            </StoreProvider>
+          </SettingsProvider>
+        </MobileCheck>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, Text, View, Platform } from "react-native";
 import {
   PinchGestureHandler,
@@ -34,6 +34,7 @@ const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const viewStateRef = useRef({ scale: 1, offsetX: 0, offsetY: 0 });
 
   useEffect(() => {
     (async () => {
@@ -46,18 +47,50 @@ const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
     })();
   }, []);
 
-  const scheduleStateSave = () => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveTimeoutRef.current = setTimeout(() => {
-      saveViewStateToStorage({ scale, offsetX, offsetY }).catch(
-        () => undefined,
-      );
-    }, 500);
-  };
+  useEffect(() => {
+    viewStateRef.current = { scale, offsetX, offsetY };
+  }, [scale, offsetX, offsetY]);
+
+  const scheduleStateSave = useCallback(
+    (next?: { scale: number; offsetX: number; offsetY: number }) => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      const snapshot = next ?? viewStateRef.current;
+      saveTimeoutRef.current = setTimeout(() => {
+        saveViewStateToStorage(snapshot).catch(() => undefined);
+      }, 500);
+    },
+    [],
+  );
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const applyScale = useCallback(
+    (targetScale: number, focusPoint?: { x: number; y: number }) => {
+      const clamped = Math.min(2.5, Math.max(0.4, targetScale));
+      const rect = containerRef.current?.getBoundingClientRect();
+      const fallbackFocus = rect
+        ? { x: rect.width / 2, y: rect.height / 2 }
+        : { x: 0, y: 0 };
+      const focus = focusPoint ?? fallbackFocus;
+      if (clamped === scale) {
+        return;
+      }
+      const ratio = clamped / scale;
+      const newOffsetX = offsetX * ratio + focus.x * (1 - ratio);
+      const newOffsetY = offsetY * ratio + focus.y * (1 - ratio);
+      setOffsetX(newOffsetX);
+      setOffsetY(newOffsetY);
+      setScale(clamped);
+      scheduleStateSave({
+        scale: clamped,
+        offsetX: newOffsetX,
+        offsetY: newOffsetY,
+      });
+    },
+    [scale, offsetX, offsetY, scheduleStateSave],
+  );
 
   useEffect(() => {
     const element = containerRef.current;
@@ -67,9 +100,11 @@ const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
         const delta = -e.deltaY * 0.01;
-        const newScale = Math.min(2.5, Math.max(0.4, scale + delta));
-        setScale(newScale);
-        scheduleStateSave();
+        const rect = element.getBoundingClientRect();
+        applyScale(scale + delta, {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+        });
       }
     };
 
@@ -77,7 +112,7 @@ const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       element.removeEventListener("wheel", handleWheel);
     };
-  }, [scale]);
+  }, [scale, applyScale]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isNodeDragging) return;
@@ -106,15 +141,11 @@ const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
   }, [isNodeDragging, isDragging]);
 
   const zoomOut = () => {
-    const newScale = Math.max(0.4, scale - 0.1);
-    setScale(newScale);
-    scheduleStateSave();
+    applyScale(scale - 0.1);
   };
 
   const zoomIn = () => {
-    const newScale = Math.min(2.5, scale + 0.1);
-    setScale(newScale);
-    scheduleStateSave();
+    applyScale(scale + 0.1);
   };
 
   return (

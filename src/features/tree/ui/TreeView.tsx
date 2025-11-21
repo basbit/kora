@@ -17,6 +17,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
+import Markdown from "react-native-markdown-display";
 import Svg, { Path } from "react-native-svg";
 
 import { colors } from "@shared/config/theme/colors";
@@ -355,6 +356,7 @@ const AbsoluteNode: React.FC<{
     const [offsetX, setOffsetX] = useState(0);
     const [offsetY, setOffsetY] = useState(0);
     const [selected, setSelected] = useState(false);
+    const [commentExpanded, setCommentExpanded] = useState(false);
     const storePosRef = useRef(storePos);
     storePosRef.current = storePos;
 
@@ -417,6 +419,44 @@ const AbsoluteNode: React.FC<{
         },
       }),
     ).current;
+
+    const markdownStyles = useMemo(
+      () => ({
+        body: {
+          color: theme.primary,
+          fontSize: 14,
+          lineHeight: 20,
+        },
+        heading1: { color: theme.primary, marginBottom: 4 },
+        heading2: { color: theme.primary, marginBottom: 4 },
+        heading3: { color: theme.primary, marginBottom: 4 },
+        bullet_list: { color: theme.primary },
+        ordered_list: { color: theme.primary },
+        link: { color: theme.accent },
+        code_inline: {
+          backgroundColor:
+            currentTheme === "dark" ? "rgba(255,255,255,0.1)" : "#f0ead8",
+          color: theme.primary,
+          paddingHorizontal: 4,
+          paddingVertical: 2,
+          borderRadius: 4,
+        },
+        fence: {
+          backgroundColor:
+            currentTheme === "dark" ? "rgba(255,255,255,0.08)" : "#f0ead8",
+          color: theme.primary,
+          padding: 8,
+          borderRadius: 6,
+        },
+      }),
+      [currentTheme, theme],
+    );
+
+    useEffect(() => {
+      if (!selected) {
+        setCommentExpanded(false);
+      }
+    }, [selected]);
 
     const handlePress = () => {
       if (!wasDraggedRef.current) {
@@ -500,19 +540,30 @@ const AbsoluteNode: React.FC<{
                   )}
                 </Pressable>
 
-                <Text
-                  style={{
-                    fontSize: 20,
-                    fontWeight: "700",
-                    textAlign: "center",
-                    marginBottom: 8,
-                    color: theme.primary,
-                  }}
-                >
-                  {[person.firstName, person.lastName]
-                    .filter(Boolean)
-                    .join(" ") || person.name}
-                </Text>
+                <View style={{ marginBottom: 8, alignItems: "center", gap: 2 }}>
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      fontWeight: "700",
+                      textAlign: "center",
+                      color: theme.primary,
+                    }}
+                  >
+                    {person.firstName || person.name}
+                  </Text>
+                  {person.lastName ? (
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontWeight: "500",
+                        textAlign: "center",
+                        color: theme.primary,
+                      }}
+                    >
+                      {person.lastName}
+                    </Text>
+                  ) : null}
+                </View>
 
                 {person.birthDateISO || person.deathDateISO ? (
                   <View
@@ -625,6 +676,7 @@ const AbsoluteNode: React.FC<{
                       padding: 12,
                       borderRadius: 8,
                       marginBottom: 12,
+                      gap: 8,
                     }}
                   >
                     <Text
@@ -632,14 +684,45 @@ const AbsoluteNode: React.FC<{
                         fontSize: 12,
                         fontWeight: "600",
                         color: theme.secondary,
-                        marginBottom: 4,
                       }}
                     >
                       {t("comment_label")}
                     </Text>
-                    <Text style={{ fontSize: 14, color: theme.primary }}>
-                      {person.comment}
-                    </Text>
+                    {(() => {
+                      const shouldCollapse = person.comment.length > 200;
+                      const collapseStyles =
+                        shouldCollapse && !commentExpanded
+                          ? { maxHeight: 160, overflow: "hidden" as const }
+                          : null;
+                      return (
+                        <>
+                          <View style={collapseStyles}>
+                            <Markdown style={markdownStyles}>
+                              {person.comment}
+                            </Markdown>
+                          </View>
+                          {shouldCollapse ? (
+                            <Pressable
+                              onPress={() =>
+                                setCommentExpanded((prev) => !prev)
+                              }
+                            >
+                              <Text
+                                style={{
+                                  color: theme.accent,
+                                  fontWeight: "600",
+                                  textAlign: "left",
+                                }}
+                              >
+                                {commentExpanded
+                                  ? t("read_less")
+                                  : t("read_more")}
+                              </Text>
+                            </Pressable>
+                          ) : null}
+                        </>
+                      );
+                    })()}
                   </View>
                 ) : null}
 

@@ -8,6 +8,7 @@ import {
   Modal,
   Linking,
   ScrollView,
+  Platform,
 } from "react-native";
 
 import { colors } from "@shared/config/theme/colors";
@@ -56,6 +57,16 @@ export function SettingsScreen() {
           importJson(JSON.stringify({ persons: [], positions: {} })),
       },
     ]);
+  };
+
+  const openAppStore = () => {
+    Linking.openURL("https://apps.apple.com/app/id/com.rbaster.kora");
+  };
+
+  const openGooglePlay = () => {
+    Linking.openURL(
+      "https://play.google.com/store/apps/details?id=com.rbaster.kora",
+    );
   };
 
   return (
@@ -193,6 +204,39 @@ export function SettingsScreen() {
           {t("total_people")}: {Object.keys(personsById).length}
         </Text>
       </View>
+
+      {Platform.OS === "web" && (
+        <View
+          style={{
+            backgroundColor: theme.surface,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 12,
+            padding: 12,
+            gap: 10,
+          }}
+        >
+          <Text style={{ color: theme.secondary }}>
+            {t("download_mobile_app")}
+          </Text>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <IconBtn
+              label={t("app_store")}
+              icon="logo-apple"
+              onPress={openAppStore}
+              bg={theme.surfaceVariant}
+              fg={theme.primary}
+            />
+            <IconBtn
+              label={t("google_play")}
+              icon="logo-google-playstore"
+              onPress={openGooglePlay}
+              bg={theme.surfaceVariant}
+              fg={theme.primary}
+            />
+          </View>
+        </View>
+      )}
 
       <View>
         <Pressable

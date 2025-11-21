@@ -29,10 +29,8 @@ export const NodeCard: React.FC<{
   const avatarBg = theme.avatarBg;
   const avatarIcon = theme.avatarIcon;
 
-  const displayName =
-    [person.firstName, person.lastName].filter(Boolean).join(" ") ||
-    person.name ||
-    "";
+  const firstLine = person.firstName || person.name || "";
+  const lastLine = person.lastName || "";
   const dates = formatDates(person.birthDateISO, person.deathDateISO);
 
   return (
@@ -61,23 +59,34 @@ export const NodeCard: React.FC<{
           <Ionicons name="person" size={36} color={avatarIcon} />
         </View>
       )}
-      <Text
-        style={{
-          marginTop: 6,
-          fontSize: 14,
-          fontWeight: "700",
-          color: primary,
-          textAlign: "center",
-        }}
-        numberOfLines={2}
-      >
-        {displayName}
-      </Text>
+      <View style={{ marginTop: 6, alignItems: "center", width: "100%" }}>
+        {firstLine ? (
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: "700",
+              color: primary,
+              textAlign: "center",
+            }}
+          >
+            {firstLine}
+          </Text>
+        ) : null}
+        {lastLine ? (
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "500",
+              color: primary,
+              textAlign: "center",
+            }}
+          >
+            {lastLine}
+          </Text>
+        ) : null}
+      </View>
       {dates ? (
-        <Text
-          style={{ fontSize: 12, color: secondary, textAlign: "center" }}
-          numberOfLines={1}
-        >
+        <Text style={{ fontSize: 12, color: secondary, textAlign: "center" }} numberOfLines={1}>
           {dates}
         </Text>
       ) : null}
