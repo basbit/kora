@@ -15,7 +15,11 @@ import Animated, {
 import {
   saveViewStateToStorage,
   loadViewStateFromStorage,
-} from "@shared/lib/storage/asyncStorage";
+  saveViewStateById,
+  loadViewStateById,
+} from "@shared/lib/storage/indexedDB";
+
+import { useTreeStore } from "@app/providers/StoreProvider";
 
 import { useDragCtx } from "./DragContext";
 
@@ -27,6 +31,7 @@ import type {
 const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { treeId } = useTreeStore();
   const { isDragging: isNodeDragging } = useDragCtx();
   const [scale, setScale] = useState(1);
   const [offsetX, setOffsetX] = useState(0);
@@ -38,14 +43,16 @@ const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     (async () => {
-      const saved = await loadViewStateFromStorage();
+      const saved = treeId
+        ? await loadViewStateById(treeId)
+        : await loadViewStateFromStorage();
       if (saved) {
         setScale(saved.scale);
         setOffsetX(saved.offsetX);
         setOffsetY(saved.offsetY);
       }
     })();
-  }, []);
+  }, [treeId]);
 
   useEffect(() => {
     viewStateRef.current = { scale, offsetX, offsetY };
@@ -58,10 +65,13 @@ const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
       }
       const snapshot = next ?? viewStateRef.current;
       saveTimeoutRef.current = setTimeout(() => {
-        saveViewStateToStorage(snapshot).catch(() => undefined);
+        const savePromise = treeId
+          ? saveViewStateById(treeId, snapshot)
+          : saveViewStateToStorage(snapshot);
+        savePromise.catch(() => undefined);
       }, 500);
     },
-    [],
+    [treeId],
   );
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -139,6 +149,15 @@ const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
       setIsDragging(false);
     }
   }, [isNodeDragging, isDragging]);
+
+  // Cleanup pending save on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const zoomOut = () => {
     applyScale(scale - 0.1);
@@ -223,6 +242,7 @@ const ZoomPanViewWeb: React.FC<{ children: React.ReactNode }> = ({
 const ZoomPanViewMobile: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { treeId } = useTreeStore();
   const baseScale = useSharedValue(1);
   const pinchScale = useSharedValue(1);
 
@@ -236,25 +256,34 @@ const ZoomPanViewMobile: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     (async () => {
-      const saved = await loadViewStateFromStorage();
+      const saved = treeId
+        ? await loadViewStateById(treeId)
+        : await loadViewStateFromStorage();
       if (saved) {
         baseScale.value = saved.scale;
         offsetX.value = saved.offsetX;
         offsetY.value = saved.offsetY;
       }
     })();
-  }, []);
+  }, [treeId]);
 
   const scheduleStateSave = () => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
     saveTimeoutRef.current = setTimeout(() => {
-      saveViewStateToStorage({
-        scale: baseScale.value,
-        offsetX: offsetX.value,
-        offsetY: offsetY.value,
-      }).catch(() => undefined);
+      const savePromise = treeId
+        ? saveViewStateById(treeId, {
+            scale: baseScale.value,
+            offsetX: offsetX.value,
+            offsetY: offsetY.value,
+          })
+        : saveViewStateToStorage({
+            scale: baseScale.value,
+            offsetX: offsetX.value,
+            offsetY: offsetY.value,
+          });
+      savePromise.catch(() => undefined);
     }, 500);
   };
 
@@ -295,6 +324,15 @@ const ZoomPanViewMobile: React.FC<{ children: React.ReactNode }> = ({
       { scale: baseScale.value * pinchScale.value },
     ],
   }));
+
+  // Cleanup pending save on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const zoomOut = () => {
     baseScale.value = Math.max(0.4, baseScale.value - 0.1);

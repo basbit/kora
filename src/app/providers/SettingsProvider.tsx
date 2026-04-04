@@ -70,8 +70,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const currentLanguage: "ru" | "en" =
     settings.language === "system"
       ? i18n.language.startsWith("en")
-        ? "ru"
-        : "en"
+        ? "en"
+        : "ru"
       : settings.language;
 
   useEffect(() => {

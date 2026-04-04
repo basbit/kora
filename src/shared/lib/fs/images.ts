@@ -1,6 +1,17 @@
 import * as FileSystem from "expo-file-system";
 import * as ImageManipulator from "expo-image-manipulator";
+import React from "react";
 import { Platform } from "react-native";
+
+import {
+  saveImageToStorage,
+  loadImageFromStorage,
+  deleteImageFromStorage,
+} from "@shared/lib/storage/indexedDB";
+
+export const isWeb = (): boolean => {
+  return Platform.OS === "web";
+};
 
 const IMAGES_DIR = FileSystem.documentDirectory + "images";
 const MAX_SIZE_KB = 500;
@@ -88,9 +99,17 @@ async function convertImageToBase64Web(sourceUri: string): Promise<string> {
       fetch(sourceUri)
         .then((response) => response.blob())
         .then((blob) => {
+          const mimeType = blob.type || "image/jpeg";
           const reader = new FileReader();
           reader.onloadend = async () => {
-            const dataUrl = reader.result as string;
+            let dataUrl = reader.result as string;
+            if (dataUrl.startsWith("data:application/octet-stream")) {
+              dataUrl = dataUrl.replace(
+                "data:application/octet-stream",
+                `data:${mimeType}`,
+              );
+            }
+
             const sizeKB = getImageSizeInKB(dataUrl);
 
             if (sizeKB <= MAX_SIZE_KB) {
@@ -165,11 +184,29 @@ export async function copyImageToAppDir(
   personId: string,
   sourceUri: string,
 ): Promise<string> {
-  if (Platform.OS === "web") {
-    try {
-      return await convertImageToBase64Web(sourceUri);
-    } catch {
+  if (isWeb()) {
+    if (
+      sourceUri.startsWith("data:") &&
+      getImageSizeInKB(sourceUri) <= MAX_SIZE_KB
+    ) {
       return sourceUri;
+    }
+
+    try {
+      const base64Data = await convertImageToBase64Web(sourceUri);
+      await saveImageToStorage(personId, base64Data);
+      return personId;
+    } catch (error) {
+      console.warn(
+        "Failed to save image to IndexedDB, falling back to base64:",
+        error,
+      );
+      try {
+        return await convertImageToBase64Web(sourceUri);
+      } catch (fallbackError) {
+        console.error("Failed to convert image to base64:", fallbackError);
+        return sourceUri;
+      }
     }
   }
 
@@ -179,4 +216,97 @@ export async function copyImageToAppDir(
   const target = `${IMAGES_DIR}/${personId}.${ext}`;
   await FileSystem.copyAsync({ from: optimizedUri, to: target });
   return target;
+}
+
+export function isImageId(uri: string): boolean {
+  return (
+    uri.length >= 10 &&
+    !uri.startsWith("data:") &&
+    !uri.startsWith("file:") &&
+    !uri.startsWith("http") &&
+    !uri.startsWith("blob:") &&
+    !uri.includes("/") &&
+    /^[a-z0-9_]+$/.test(uri)
+  );
+}
+
+export async function loadImageData(imageUri: string): Promise<string | null> {
+  if (isWeb()) {
+    if (isImageId(imageUri)) {
+      return await loadImageFromStorage(imageUri);
+    } else if (imageUri.startsWith("data:")) {
+      return imageUri;
+    }
+  }
+
+  return imageUri;
+}
+
+export async function deleteImageData(imageUri: string): Promise<void> {
+  if (isWeb()) {
+    if (isImageId(imageUri)) {
+      await deleteImageFromStorage(imageUri);
+    }
+  } else {
+    try {
+      await FileSystem.deleteAsync(imageUri, { idempotent: true });
+    } catch (error) {
+      console.warn("Failed to delete image file:", error);
+    }
+  }
+}
+
+export function useImageData(imageUri?: string) {
+  const [imageData, setImageData] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!imageUri) {
+      setImageData(null);
+      return;
+    }
+
+    if (imageUri.startsWith("data:")) {
+      setImageData(imageUri);
+      return;
+    }
+
+    if (isImageId(imageUri)) {
+      setLoading(true);
+      loadImageData(imageUri)
+        .then(setImageData)
+        .catch(() => setImageData(null))
+        .finally(() => setLoading(false));
+    } else {
+      setImageData(imageUri);
+    }
+  }, [imageUri]);
+
+  return { imageData, loading };
+}
+
+export function useImageGalleryData(imageUris?: string[]) {
+  const [imageData, setImageData] = React.useState<(string | null)[]>([]);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!imageUris || imageUris.length === 0) {
+      setImageData([]);
+      return;
+    }
+
+    setLoading(true);
+    const loadPromises = imageUris.map((uri) => loadImageData(uri));
+
+    Promise.all(loadPromises)
+      .then((results) => {
+        setImageData(results);
+      })
+      .catch(() => {
+        setImageData(new Array(imageUris.length).fill(null));
+      })
+      .finally(() => setLoading(false));
+  }, [imageUris]);
+
+  return { imageData, loading };
 }

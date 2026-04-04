@@ -1,20 +1,15 @@
 module.exports = {
-  testEnvironment: 'node',
-  transform: {
-    '^.+\\.(ts|tsx|js|jsx)$': 'babel-jest',
+  preset: "jest-expo",
+  transformIgnorePatterns: [
+    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)",
+  ],
+  setupFiles: ["./jest.setup.js"],
+  moduleNameMapper: {
+    "^@app/(.*)$": "<rootDir>/src/app/$1",
+    "^@pages/(.*)$": "<rootDir>/src/pages/$1",
+    "^@features/(.*)$": "<rootDir>/src/features/$1",
+    "^@entities/(.*)$": "<rootDir>/src/entities/$1",
+    "^@shared/(.*)$": "<rootDir>/src/shared/$1",
+    "^@assets/(.*)$": "<rootDir>/assets/$1",
   },
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.[jt]sx?$',
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/src/__tests__/setup.ts',
-  ],
-  collectCoverageFrom: [
-    'src/**/*.{js,jsx,ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/*.stories.{js,jsx,ts,tsx}',
-    '!src/**/*.test.{js,jsx,ts,tsx}',
-    '!src/__mocks__/**',
-  ],
-  injectGlobals: true,
 };

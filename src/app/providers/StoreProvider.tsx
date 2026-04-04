@@ -11,7 +11,9 @@ import { View, ActivityIndicator } from "react-native";
 import {
   loadTreeFromStorage,
   saveTreeToStorage,
-} from "@shared/lib/storage/asyncStorage";
+  saveTreeById,
+  loadTreeById,
+} from "@shared/lib/storage/indexedDB";
 
 import type {
   Person,
@@ -225,6 +227,7 @@ const StoreCtx = createContext<{
   personsById: PersonsById;
   rootId?: string;
   positions: Record<string, NodePosition>;
+  treeId?: string;
   addPerson: (input: AddPersonInput) => string;
   updatePerson: (person: Person) => void;
   removePerson: (id: string) => void;
@@ -240,6 +243,7 @@ const StoreCtx = createContext<{
 }>({
   personsById: {},
   positions: {},
+  treeId: undefined,
   addPerson: () => "",
   updatePerson: () => {},
   removePerson: () => {},
@@ -254,15 +258,16 @@ const StoreCtx = createContext<{
   importJson: () => {},
 });
 
-function genId() {
+export function genId() {
   return (
     Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4)
   );
 }
 
-export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const StoreProvider: React.FC<{
+  children: React.ReactNode;
+  treeId?: string;
+}> = ({ children, treeId }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [state, dispatch] = useReducer(reducerAll, {
     personsById: {},
@@ -274,7 +279,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     (async () => {
       try {
-        const loaded = await loadTreeFromStorage();
+        const loaded = treeId
+          ? await loadTreeById(treeId)
+          : await loadTreeFromStorage();
         if (loaded) {
           const normalized = (loaded.persons as Person[]).map((p) =>
             normalizePerson(p),
@@ -298,13 +305,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsLoaded(true);
       }
     })();
-  }, []);
+  }, [treeId]);
 
   useEffect(() => {
     const persons = Object.values(state.personsById);
     const json: TreeJson = { persons, positions: state.positions };
-    saveTreeToStorage(json).catch(() => undefined);
-  }, [state.personsById, state.positions]);
+    if (treeId) {
+      saveTreeById(treeId, json).catch(() => undefined);
+    } else {
+      saveTreeToStorage(json).catch(() => undefined);
+    }
+  }, [state.personsById, state.positions, treeId]);
 
   const api = useMemo(
     () => ({
@@ -402,6 +413,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
         personsById: state.personsById,
         positions: state.positions,
         rootId: state.rootId,
+        treeId,
         ...api,
       }}
     >
@@ -414,7 +426,8 @@ export function useTreeStore() {
   return useContext(StoreCtx);
 }
 
-function normalizePerson(p: Person): Person {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function normalizePerson(p: any): Person {
   const firstName = p.firstName ?? p.name ?? "";
   const lastName = p.lastName ?? undefined;
   const parentIds = Array.isArray(p.parentIds) ? p.parentIds : [];

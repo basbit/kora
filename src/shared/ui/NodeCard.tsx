@@ -3,6 +3,7 @@ import React from "react";
 import { Image, Text, View, Pressable } from "react-native";
 
 import { colors } from "@shared/config/theme/colors";
+import { useImageData } from "@shared/lib/fs/images";
 
 import type { Person } from "@entities/person/model/types";
 
@@ -29,15 +30,17 @@ export const NodeCard: React.FC<{
   const avatarBg = theme.avatarBg;
   const avatarIcon = theme.avatarIcon;
 
+  const { imageData } = useImageData(person.photoUri);
+
   const firstLine = person.firstName || person.name || "";
   const lastLine = person.lastName || "";
   const dates = formatDates(person.birthDateISO, person.deathDateISO);
 
   return (
     <Pressable onPress={onPress} style={{ alignItems: "center", width: 100 }}>
-      {person.photoUri ? (
+      {imageData ? (
         <Image
-          source={{ uri: person.photoUri }}
+          source={{ uri: imageData }}
           style={{
             width: 64,
             height: 64,

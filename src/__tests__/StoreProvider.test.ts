@@ -1,25 +1,8 @@
 import type { Person } from "@entities/person/model/types";
 
-describe("StoreProvider helpers", () => {
-  function normalizePerson(p: Partial<Person> & { id: string }): Person {
-    const firstName = p.firstName ?? (p as any).name ?? "";
-    const lastName = p.lastName ?? undefined;
-    const parentIds = Array.isArray(p.parentIds) ? p.parentIds : [];
-    const spouseIds = Array.isArray(p.spouseIds) ? p.spouseIds : [];
-    return {
-      id: p.id,
-      firstName: firstName,
-      lastName,
-      birthDateISO: p.birthDateISO,
-      deathDateISO: p.deathDateISO,
-      comment: p.comment,
-      photoUri: p.photoUri,
-      parentIds,
-      spouseIds,
-      createdAt: p.createdAt ?? Date.now(),
-    };
-  }
+import { normalizePerson, genId } from "@app/providers/StoreProvider";
 
+describe("StoreProvider", () => {
   describe("normalizePerson", () => {
     it("should normalize person with all fields", () => {
       const person: Partial<Person> & { id: string } = {
@@ -95,14 +78,7 @@ describe("StoreProvider helpers", () => {
     });
   });
 
-  describe("person ID generation", () => {
-    function genId(): string {
-      return (
-        Math.random().toString(36).slice(2, 10) +
-        Date.now().toString(36).slice(-4)
-      );
-    }
-
+  describe("genId", () => {
     it("should generate unique IDs", () => {
       const ids = new Set();
       for (let i = 0; i < 100; i++) {

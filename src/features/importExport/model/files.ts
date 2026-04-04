@@ -5,233 +5,329 @@ import i18n from "i18next";
 import JSZip from "jszip";
 import { Platform } from "react-native";
 
-import { ensureImagesDir } from "@shared/lib/fs/images";
+import {
+  ensureImagesDir,
+  isImageId,
+  loadImageData,
+} from "@shared/lib/fs/images";
+import { loadTreeById } from "@shared/lib/storage/indexedDB";
 
 import type { TreeJson, Person } from "@entities/person/model/types";
+import type { TreeMetadata } from "@entities/tree/model/types";
 
+const isWeb = (): boolean => Platform.OS === "web";
 const baseDir = FileSystem.cacheDirectory || FileSystem.documentDirectory || "";
 
-/* eslint-disable complexity */
-export async function exportTreeArchive(json: string): Promise<void> {
-  const zip = new JSZip();
+// ─── Shared helpers ───────────────────────────────────────────────────────────
 
-  let toWrite = json;
-  try {
-    const parsed = JSON.parse(json) as TreeJson;
-    const updatedPersons: Person[] = [];
-    const imagesFolder = zip.folder("images");
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
+}
 
-    for (const p of parsed.persons) {
-      let photoUri = p.photoUri;
-      let photoGallery = p.photoGallery;
-
-      if (p.photoUri) {
-        const fileName = buildAvatarFileName(p.id, p.photoUri);
-        try {
-          if (Platform.OS === "web" && p.photoUri.startsWith("data:")) {
-            const base64Data = p.photoUri.split(",")[1];
-            imagesFolder?.file(fileName, base64Data, { base64: true });
-            photoUri = fileName;
-          } else {
-            const data = await FileSystem.readAsStringAsync(p.photoUri, {
-              encoding: FileSystem.EncodingType.Base64,
-            });
-            imagesFolder?.file(fileName, data, { base64: true });
-            photoUri = fileName;
-          }
-        } catch (error) {
-          console.error(`Failed to export photoUri for ${p.id}:`, error);
-          photoUri = undefined;
-        }
-      }
-
-      if (p.photoGallery && p.photoGallery.length > 0) {
-        const galleryFiles: string[] = [];
-        for (let i = 0; i < p.photoGallery.length; i++) {
-          const galleryUri = p.photoGallery[i];
-          const galleryFileName = buildGalleryFileName(p.id, i, galleryUri);
-          try {
-            if (Platform.OS === "web" && galleryUri.startsWith("data:")) {
-              const base64Data = galleryUri.split(",")[1];
-              imagesFolder?.file(galleryFileName, base64Data, { base64: true });
-              galleryFiles.push(galleryFileName);
-            } else {
-              const data = await FileSystem.readAsStringAsync(galleryUri, {
-                encoding: FileSystem.EncodingType.Base64,
-              });
-              imagesFolder?.file(galleryFileName, data, { base64: true });
-              galleryFiles.push(galleryFileName);
-            }
-          } catch (error) {
-            console.error(
-              `Failed to export gallery photo ${i} for ${p.id}:`,
-              error,
-            );
-          }
-        }
-        photoGallery = galleryFiles.length > 0 ? galleryFiles : undefined;
-      }
-
-      updatedPersons.push({ ...p, photoUri, photoGallery });
-    }
-    toWrite = JSON.stringify(
-      { persons: updatedPersons, positions: parsed.positions },
-      null,
-      2,
-    );
-  } catch {
-    // Ignore errors during initialization
-  }
-
-  zip.file("tree.json", toWrite);
-
-  if (Platform.OS === "web") {
+async function generateAndShareZip(
+  zip: JSZip,
+  fileName: string,
+): Promise<void> {
+  if (isWeb()) {
     const blob = await zip.generateAsync({ type: "blob" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `kora_tree_${Date.now()}.zip`;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     return;
   }
-
   const base64 = await zip.generateAsync({ type: "base64" });
-  const zipTarget = `${baseDir}gentree_${Date.now()}.zip`;
+  const zipTarget = `${baseDir}${fileName}`;
   await FileSystem.writeAsStringAsync(zipTarget, base64, {
     encoding: FileSystem.EncodingType.Base64,
   });
-
   const canShare = await Sharing.isAvailableAsync();
   if (canShare) {
     const title = i18n.isInitialized
       ? (i18n.t("export_dialog_title") as string)
-      : "Export tree";
+      : "Export";
     await Sharing.shareAsync(zipTarget, {
       mimeType: "application/zip",
       dialogTitle: title,
     });
   }
 }
+
+/* eslint-disable complexity */
+async function processPersonsForExport(
+  persons: Person[],
+  imagesFolder: JSZip | null,
+): Promise<Person[]> {
+  const updated: Person[] = [];
+  for (const p of persons) {
+    let photoUri = p.photoUri;
+    let photoGallery = p.photoGallery;
+
+    if (p.photoUri) {
+      const fileName = buildAvatarFileName(p.id, p.photoUri);
+      try {
+        if (isWeb() && p.photoUri.startsWith("data:")) {
+          imagesFolder?.file(fileName, p.photoUri.split(",")[1], {
+            base64: true,
+          });
+          photoUri = fileName;
+        } else if (isWeb() && isImageId(p.photoUri)) {
+          const imageData = await loadImageData(p.photoUri);
+          if (imageData?.startsWith("data:")) {
+            imagesFolder?.file(fileName, imageData.split(",")[1], {
+              base64: true,
+            });
+            photoUri = fileName;
+          } else {
+            photoUri = undefined;
+          }
+        } else {
+          const data = await FileSystem.readAsStringAsync(p.photoUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          imagesFolder?.file(fileName, data, { base64: true });
+          photoUri = fileName;
+        }
+      } catch {
+        photoUri = undefined;
+      }
+    }
+
+    if (p.photoGallery?.length) {
+      const files: string[] = [];
+      for (let i = 0; i < p.photoGallery.length; i++) {
+        const uri = p.photoGallery[i];
+        const name = buildGalleryFileName(p.id, i, uri);
+        try {
+          if (isWeb() && uri.startsWith("data:")) {
+            imagesFolder?.file(name, uri.split(",")[1], { base64: true });
+            files.push(name);
+          } else if (isWeb() && isImageId(uri)) {
+            const imageData = await loadImageData(uri);
+            if (imageData?.startsWith("data:")) {
+              imagesFolder?.file(name, imageData.split(",")[1], {
+                base64: true,
+              });
+              files.push(name);
+            }
+          } else {
+            const data = await FileSystem.readAsStringAsync(uri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+            imagesFolder?.file(name, data, { base64: true });
+            files.push(name);
+          }
+        } catch {
+          /* skip */
+        }
+      }
+      photoGallery = files.length ? files : undefined;
+    }
+
+    updated.push({ ...p, photoUri, photoGallery });
+  }
+  return updated;
+}
 /* eslint-enable complexity */
 
 /* eslint-disable complexity */
+async function processPersonsFromWebZip(
+  persons: Person[],
+  zip: JSZip,
+  imagePrefix: string,
+): Promise<Person[]> {
+  const updated: Person[] = [];
+  for (const p of persons) {
+    let photoUri = p.photoUri;
+    let photoGallery = p.photoGallery;
+
+    if (photoUri && !photoUri.startsWith("data:")) {
+      const entry = zip.file(
+        `${imagePrefix}${photoUri.replace(/^images\//, "")}`,
+      );
+      if (entry) {
+        try {
+          photoUri = await blobToDataUrl(await entry.async("blob"));
+        } catch {
+          photoUri = undefined;
+        }
+      } else {
+        photoUri = undefined;
+      }
+    }
+
+    if (photoGallery?.length) {
+      const uris: string[] = [];
+      for (const fn of photoGallery) {
+        if (fn.startsWith("data:")) {
+          uris.push(fn);
+        } else {
+          const entry = zip.file(
+            `${imagePrefix}${fn.replace(/^images\//, "")}`,
+          );
+          if (entry) {
+            try {
+              uris.push(await blobToDataUrl(await entry.async("blob")));
+            } catch {
+              /* skip */
+            }
+          }
+        }
+      }
+      photoGallery = uris.length ? uris : undefined;
+    }
+
+    const firstName = p.firstName ?? (p as Record<string, unknown>).name ?? "";
+    updated.push({
+      ...p,
+      firstName: String(firstName),
+      lastName: p.lastName ?? undefined,
+      photoUri,
+      photoGallery,
+    });
+  }
+  return updated;
+}
+/* eslint-enable complexity */
+
+/* eslint-disable complexity */
+async function processPersonsFromNativeZip(
+  persons: Person[],
+  zip: JSZip,
+  imagePrefix: string,
+  appImagesDir: string,
+): Promise<Person[]> {
+  const updated: Person[] = [];
+  for (const p of persons) {
+    let photoUri = p.photoUri;
+    let photoGallery = p.photoGallery;
+
+    if (photoUri && !photoUri.startsWith("file:")) {
+      const entry = zip.file(
+        `${imagePrefix}${photoUri.replace(/^images\//, "")}`,
+      );
+      if (entry) {
+        try {
+          const b64 = await entry.async("base64");
+          const dest = `${appImagesDir}/${photoUri}`;
+          await FileSystem.writeAsStringAsync(dest, b64, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          photoUri = dest;
+        } catch {
+          photoUri = undefined;
+        }
+      } else {
+        photoUri = undefined;
+      }
+    }
+
+    if (photoGallery?.length) {
+      const uris: string[] = [];
+      for (const fn of photoGallery) {
+        if (fn.startsWith("file:")) {
+          uris.push(fn);
+        } else {
+          const entry = zip.file(
+            `${imagePrefix}${fn.replace(/^images\//, "")}`,
+          );
+          if (entry) {
+            try {
+              const b64 = await entry.async("base64");
+              const dest = `${appImagesDir}/${fn}`;
+              await FileSystem.writeAsStringAsync(dest, b64, {
+                encoding: FileSystem.EncodingType.Base64,
+              });
+              uris.push(dest);
+            } catch {
+              /* skip */
+            }
+          }
+        }
+      }
+      photoGallery = uris.length ? uris : undefined;
+    }
+
+    const firstName = p.firstName ?? (p as Record<string, unknown>).name ?? "";
+    updated.push({
+      ...p,
+      firstName: String(firstName),
+      lastName: p.lastName ?? undefined,
+      photoUri,
+      photoGallery,
+    });
+  }
+  return updated;
+}
+/* eslint-enable complexity */
+
+// ─── Single-tree archive ──────────────────────────────────────────────────────
+
+export async function exportTreeArchive(
+  json: string,
+  metadata?: TreeMetadata,
+): Promise<void> {
+  const zip = new JSZip();
+  const imagesFolder = zip.folder("images");
+
+  let persons: Person[] = [];
+  let positions: Record<string, unknown> = {};
+  try {
+    const parsed = JSON.parse(json) as TreeJson;
+    persons = await processPersonsForExport(parsed.persons, imagesFolder);
+    positions = parsed.positions ?? {};
+  } catch {
+    /* leave empty */
+  }
+
+  const treeContent = metadata
+    ? JSON.stringify({ version: 2, metadata, persons, positions }, null, 2)
+    : JSON.stringify({ persons, positions }, null, 2);
+
+  zip.file("tree.json", treeContent);
+  await generateAndShareZip(zip, `kora_tree_${Date.now()}.zip`);
+}
+
 export async function importTreeArchive(): Promise<string | null> {
-  if (Platform.OS === "web") {
+  if (isWeb()) {
     return new Promise((resolve) => {
       const input = document.createElement("input");
       input.type = "file";
       input.accept = ".zip,application/zip";
       input.onchange = async (e: Event) => {
-        const target = e.target as HTMLInputElement;
-        const file = target.files?.[0];
+        const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) {
           resolve(null);
           return;
         }
-
         try {
-          const arrayBuffer = await file.arrayBuffer();
-          const zip = await JSZip.loadAsync(arrayBuffer);
-
-          const treeEntry = zip.file("tree.json");
-          if (!treeEntry) {
+          const zip = await JSZip.loadAsync(await file.arrayBuffer());
+          const content = await zip.file("tree.json")?.async("string");
+          if (!content) {
             resolve(null);
             return;
           }
-          const content = await treeEntry.async("string");
-
-          try {
-            const parsed = JSON.parse(content) as TreeJson;
-            const updatedPersons: Person[] = [];
-
-            for (const p of parsed.persons) {
-              let photoUri = p.photoUri;
-              let photoGallery = p.photoGallery;
-
-              if (photoUri && !photoUri.startsWith("data:")) {
-                const imageEntry = zip.file(
-                  `images/${photoUri.replace(/^images\//, "")}`,
-                );
-                if (imageEntry) {
-                  try {
-                    const blob = await imageEntry.async("blob");
-                    const reader = new FileReader();
-                    photoUri = await new Promise<string>((res) => {
-                      reader.onload = () => res(reader.result as string);
-                      reader.readAsDataURL(blob);
-                    });
-                  } catch (error) {
-                    console.error(
-                      `Failed to import photoUri for ${p.id}:`,
-                      error,
-                    );
-                    photoUri = undefined;
-                  }
-                } else {
-                  console.warn(
-                    `Image file not found in archive for ${p.id}: ${photoUri}`,
-                  );
-                  photoUri = undefined;
-                }
-              }
-
-              if (photoGallery && photoGallery.length > 0) {
-                const galleryUris: string[] = [];
-                for (const galleryFileName of photoGallery) {
-                  if (galleryFileName.startsWith("data:")) {
-                    galleryUris.push(galleryFileName);
-                  } else {
-                    const imageEntry = zip.file(
-                      `images/${galleryFileName.replace(/^images\//, "")}`,
-                    );
-                    if (imageEntry) {
-                      try {
-                        const blob = await imageEntry.async("blob");
-                        const reader = new FileReader();
-                        const dataUrl = await new Promise<string>((res) => {
-                          reader.onload = () => res(reader.result as string);
-                          reader.readAsDataURL(blob);
-                        });
-                        galleryUris.push(dataUrl);
-                      } catch (error) {
-                        console.error(
-                          `Failed to import gallery photo ${galleryFileName} for ${p.id}:`,
-                          error,
-                        );
-                      }
-                    } else {
-                      console.warn(
-                        `Gallery image not found in archive for ${p.id}: ${galleryFileName}`,
-                      );
-                    }
-                  }
-                }
-                photoGallery = galleryUris.length > 0 ? galleryUris : undefined;
-              }
-
-              const firstName = p.firstName ?? p.name ?? "";
-              const lastName = p.lastName ?? undefined;
-              updatedPersons.push({
-                ...p,
-                firstName,
-                lastName,
-                photoUri,
-                photoGallery,
-              });
-            }
-            resolve(
-              JSON.stringify(
-                { persons: updatedPersons, positions: parsed.positions },
-                null,
-                2,
-              ),
-            );
-          } catch {
-            resolve(content);
-          }
+          const parsed = JSON.parse(content);
+          const persons = await processPersonsFromWebZip(
+            parsed.persons ?? [],
+            zip,
+            "images/",
+          );
+          resolve(
+            JSON.stringify(
+              { persons, positions: parsed.positions ?? {} },
+              null,
+              2,
+            ),
+          );
         } catch {
           resolve(null);
         }
@@ -246,95 +342,25 @@ export async function importTreeArchive(): Promise<string | null> {
     copyToCacheDirectory: true,
   });
   if (res.canceled || !res.assets?.[0]) return null;
-  const asset = res.assets[0];
 
-  const base64Zip = await FileSystem.readAsStringAsync(asset.uri, {
+  const base64Zip = await FileSystem.readAsStringAsync(res.assets[0].uri, {
     encoding: FileSystem.EncodingType.Base64,
   });
   const zip = await JSZip.loadAsync(base64Zip, { base64: true });
-
-  const treeEntry = zip.file("tree.json");
-  if (!treeEntry) return null;
-  const content = await treeEntry.async("string");
+  const content = await zip.file("tree.json")?.async("string");
+  if (!content) return null;
 
   try {
-    const parsed = JSON.parse(content) as TreeJson;
+    const parsed = JSON.parse(content);
     const appImagesDir = await ensureImagesDir();
-
-    const updatedPersons: Person[] = [];
-    for (const p of parsed.persons) {
-      let photoUri = p.photoUri;
-      let photoGallery = p.photoGallery;
-
-      if (photoUri && !photoUri.startsWith("file:")) {
-        const imageEntry = zip.file(
-          `images/${photoUri.replace(/^images\//, "")}`,
-        );
-        if (imageEntry) {
-          try {
-            const b64 = await imageEntry.async("base64");
-            const dest = `${appImagesDir}/${photoUri}`;
-            await FileSystem.writeAsStringAsync(dest, b64, {
-              encoding: FileSystem.EncodingType.Base64,
-            });
-            photoUri = dest;
-          } catch (error) {
-            console.error(`Failed to import photoUri for ${p.id}:`, error);
-            photoUri = undefined;
-          }
-        } else {
-          console.warn(
-            `Image file not found in archive for ${p.id}: ${photoUri}`,
-          );
-          photoUri = undefined;
-        }
-      }
-
-      if (photoGallery && photoGallery.length > 0) {
-        const galleryUris: string[] = [];
-        for (const galleryFileName of photoGallery) {
-          if (galleryFileName.startsWith("file:")) {
-            galleryUris.push(galleryFileName);
-          } else {
-            const imageEntry = zip.file(
-              `images/${galleryFileName.replace(/^images\//, "")}`,
-            );
-            if (imageEntry) {
-              try {
-                const b64 = await imageEntry.async("base64");
-                const dest = `${appImagesDir}/${galleryFileName}`;
-                await FileSystem.writeAsStringAsync(dest, b64, {
-                  encoding: FileSystem.EncodingType.Base64,
-                });
-                galleryUris.push(dest);
-              } catch (error) {
-                console.error(
-                  `Failed to import gallery photo ${galleryFileName} for ${p.id}:`,
-                  error,
-                );
-              }
-            } else {
-              console.warn(
-                `Gallery image not found in archive for ${p.id}: ${galleryFileName}`,
-              );
-            }
-          }
-        }
-        photoGallery = galleryUris.length > 0 ? galleryUris : undefined;
-      }
-
-      const firstName = p.firstName ?? p.name ?? "";
-      const lastName = p.lastName ?? undefined;
-      updatedPersons.push({
-        ...p,
-        firstName,
-        lastName,
-        photoUri,
-        photoGallery,
-      });
-    }
+    const persons = await processPersonsFromNativeZip(
+      parsed.persons ?? [],
+      zip,
+      "images/",
+      appImagesDir,
+    );
     return JSON.stringify(
-      { persons: updatedPersons, positions: parsed.positions },
+      { persons, positions: parsed.positions ?? {} },
       null,
       2,
     );
@@ -343,23 +369,169 @@ export async function importTreeArchive(): Promise<string | null> {
   }
 }
 
-/* eslint-enable complexity */
+// ─── Multi-tree archive ───────────────────────────────────────────────────────
+
+export async function exportMultiTreeArchive(
+  treeIds: string[],
+  treesMetadata: Record<string, TreeMetadata>,
+): Promise<void> {
+  const zip = new JSZip();
+  const manifest: {
+    version: number;
+    trees: Array<{ id: string; name: string }>;
+  } = {
+    version: 1,
+    trees: [],
+  };
+
+  for (const treeId of treeIds) {
+    const meta = treesMetadata[treeId];
+    if (!meta) continue;
+    const treeData = await loadTreeById(treeId);
+    if (!treeData) continue;
+
+    manifest.trees.push({ id: treeId, name: meta.name });
+    const treeFolder = zip.folder(`trees/${treeId}`);
+    const imagesFolder = treeFolder?.folder("images") ?? null;
+
+    const persons = await processPersonsForExport(
+      treeData.persons,
+      imagesFolder,
+    );
+    treeFolder?.file(
+      "tree.json",
+      JSON.stringify(
+        {
+          version: 2,
+          metadata: meta,
+          persons,
+          positions: treeData.positions ?? {},
+        },
+        null,
+        2,
+      ),
+    );
+  }
+
+  zip.file("manifest.json", JSON.stringify(manifest, null, 2));
+  await generateAndShareZip(zip, `kora_all_trees_${Date.now()}.zip`);
+}
+
+export async function importMultiTreeArchive(): Promise<Array<{
+  name: string;
+  treeJson: string;
+}> | null> {
+  if (isWeb()) {
+    return new Promise((resolve) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".zip,application/zip";
+      input.onchange = async (e: Event) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) {
+          resolve(null);
+          return;
+        }
+        try {
+          const zip = await JSZip.loadAsync(await file.arrayBuffer());
+          const manifestContent = await zip
+            .file("manifest.json")
+            ?.async("string");
+          if (!manifestContent) {
+            resolve(null);
+            return;
+          }
+          const manifest = JSON.parse(manifestContent) as {
+            trees: Array<{ id: string; name: string }>;
+          };
+          const results: Array<{ name: string; treeJson: string }> = [];
+          for (const { id, name } of manifest.trees) {
+            const content = await zip
+              .file(`trees/${id}/tree.json`)
+              ?.async("string");
+            if (!content) continue;
+            const parsed = JSON.parse(content);
+            const persons = await processPersonsFromWebZip(
+              parsed.persons ?? [],
+              zip,
+              `trees/${id}/images/`,
+            );
+            results.push({
+              name,
+              treeJson: JSON.stringify(
+                { persons, positions: parsed.positions ?? {} },
+                null,
+                2,
+              ),
+            });
+          }
+          resolve(results.length ? results : null);
+        } catch {
+          resolve(null);
+        }
+      };
+      input.click();
+    });
+  }
+
+  const res = await DocumentPicker.getDocumentAsync({
+    type: ["application/zip", "application/x-zip-compressed", "*/*"],
+    multiple: false,
+    copyToCacheDirectory: true,
+  });
+  if (res.canceled || !res.assets?.[0]) return null;
+
+  const base64Zip = await FileSystem.readAsStringAsync(res.assets[0].uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  const zip = await JSZip.loadAsync(base64Zip, { base64: true });
+  const manifestContent = await zip.file("manifest.json")?.async("string");
+  if (!manifestContent) return null;
+
+  const manifest = JSON.parse(manifestContent) as {
+    trees: Array<{ id: string; name: string }>;
+  };
+  const appImagesDir = await ensureImagesDir();
+  const results: Array<{ name: string; treeJson: string }> = [];
+
+  for (const { id, name } of manifest.trees) {
+    const content = await zip.file(`trees/${id}/tree.json`)?.async("string");
+    if (!content) continue;
+    const parsed = JSON.parse(content);
+    const persons = await processPersonsFromNativeZip(
+      parsed.persons ?? [],
+      zip,
+      `trees/${id}/images/`,
+      appImagesDir,
+    );
+    results.push({
+      name,
+      treeJson: JSON.stringify(
+        { persons, positions: parsed.positions ?? {} },
+        null,
+        2,
+      ),
+    });
+  }
+
+  return results.length ? results : null;
+}
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+
 function getExtensionFromUri(uri: string): string {
   try {
     const clean = uri.split("?")[0];
     const match = clean.match(/\.([a-zA-Z0-9]+)$/);
-    if (match?.[1]) {
-      return `.${match[1]}`;
-    }
+    if (match?.[1]) return `.${match[1]}`;
   } catch {
-    // ignore
+    /* ignore */
   }
   return ".jpg";
 }
 
 function buildAvatarFileName(personId: string, uri: string | undefined) {
-  const ext = uri ? getExtensionFromUri(uri) : ".jpg";
-  return `${personId}_avatar${ext}`;
+  return `${personId}_avatar${uri ? getExtensionFromUri(uri) : ".jpg"}`;
 }
 
 function buildGalleryFileName(
@@ -367,6 +539,5 @@ function buildGalleryFileName(
   index: number,
   uri: string | undefined,
 ) {
-  const ext = uri ? getExtensionFromUri(uri) : ".jpg";
-  return `${personId}_gallery_${index}${ext}`;
+  return `${personId}_gallery_${index}${uri ? getExtensionFromUri(uri) : ".jpg"}`;
 }

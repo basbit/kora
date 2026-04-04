@@ -15,12 +15,14 @@ import {
   Image,
   Pressable,
   Alert,
+  Platform,
   ScrollView,
 } from "react-native";
 import Markdown from "react-native-markdown-display";
 import Svg, { Path } from "react-native-svg";
 
 import { colors } from "@shared/config/theme/colors";
+import { useImageData, useImageGalleryData } from "@shared/lib/fs/images";
 import { ImageGalleryViewer } from "@shared/ui/ImageGalleryViewer";
 import { NodeCard } from "@shared/ui/NodeCard";
 
@@ -351,6 +353,20 @@ const AbsoluteNode: React.FC<{
     const { currentTheme } = useSettings();
     const theme = currentTheme === "dark" ? colors.dark : colors.light;
     const person = personsById[id];
+
+    const { imageData: photoUriData } = useImageData(person.photoUri);
+    const { imageData: galleryData } = useImageGalleryData(person.photoGallery);
+
+    const allImagesData = useMemo(() => {
+      const images: string[] = [];
+      if (photoUriData) {
+        images.push(photoUriData);
+      }
+      if (galleryData) {
+        images.push(...(galleryData.filter((img) => img !== null) as string[]));
+      }
+      return images;
+    }, [photoUriData, galleryData]);
     const storePos = positions[id] ?? { x: 0, y: 0 };
 
     const [offsetX, setOffsetX] = useState(0);
@@ -465,15 +481,8 @@ const AbsoluteNode: React.FC<{
     };
 
     const handleImagePress = () => {
-      const images: string[] = [];
-      if (person.photoUri) {
-        images.push(person.photoUri);
-      }
-      if (person.photoGallery) {
-        images.push(...person.photoGallery);
-      }
-      if (images.length > 0) {
-        onOpenGallery(images, 0);
+      if (allImagesData.length > 0) {
+        onOpenGallery(allImagesData, 0);
       }
     };
 
@@ -515,9 +524,9 @@ const AbsoluteNode: React.FC<{
                   onPress={handleImagePress}
                   style={{ alignItems: "center", marginBottom: 16 }}
                 >
-                  {person.photoUri ? (
+                  {photoUriData ? (
                     <Image
-                      source={{ uri: person.photoUri }}
+                      source={{ uri: photoUriData }}
                       style={{ width: 120, height: 120, borderRadius: 60 }}
                     />
                   ) : (
@@ -750,34 +759,29 @@ const AbsoluteNode: React.FC<{
                       showsHorizontalScrollIndicator={false}
                       style={{ marginHorizontal: -4 }}
                     >
-                      {person.photoGallery.map((uri, index) => (
-                        <Pressable
-                          key={index}
-                          onPress={() => {
-                            const images: string[] = [];
-                            if (person.photoUri) {
-                              images.push(person.photoUri);
-                            }
-                            if (person.photoGallery) {
-                              images.push(...person.photoGallery);
-                            }
-                            onOpenGallery(
-                              images,
-                              person.photoUri ? index + 1 : index,
-                            );
-                          }}
-                          style={{ marginHorizontal: 4 }}
-                        >
-                          <Image
-                            source={{ uri }}
-                            style={{
-                              width: 80,
-                              height: 80,
-                              borderRadius: 8,
+                      {galleryData.map((imageData, index) =>
+                        imageData ? (
+                          <Pressable
+                            key={index}
+                            onPress={() => {
+                              onOpenGallery(
+                                allImagesData,
+                                photoUriData ? index + 1 : index,
+                              );
                             }}
-                          />
-                        </Pressable>
-                      ))}
+                            style={{ marginHorizontal: 4 }}
+                          >
+                            <Image
+                              source={{ uri: imageData }}
+                              style={{
+                                width: 80,
+                                height: 80,
+                                borderRadius: 8,
+                              }}
+                            />
+                          </Pressable>
+                        ) : null,
+                      )}
                     </ScrollView>
                   </View>
                 )}
@@ -792,10 +796,16 @@ const AbsoluteNode: React.FC<{
                 >
                   <Pressable
                     onPress={() => {
-                      Alert.alert(
-                        t("delete_confirm_title"),
-                        t("delete_confirm_message", { name: person.firstName }),
-                        [
+                      const msg = t("delete_confirm_message", {
+                        name: person.firstName,
+                      });
+                      if (Platform.OS === "web") {
+                        if (window.confirm(msg)) {
+                          removePerson(id);
+                          setSelected(false);
+                        }
+                      } else {
+                        Alert.alert(t("delete_confirm_title"), msg, [
                           { text: t("cancel"), style: "cancel" },
                           {
                             text: t("delete_label"),
@@ -805,8 +815,8 @@ const AbsoluteNode: React.FC<{
                               setSelected(false);
                             },
                           },
-                        ],
-                      );
+                        ]);
+                      }
                     }}
                     style={{
                       paddingVertical: 8,

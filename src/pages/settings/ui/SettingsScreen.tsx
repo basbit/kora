@@ -13,20 +13,25 @@ import {
 
 import { colors } from "@shared/config/theme/colors";
 import { Alert } from "@shared/lib/platform/alert";
+import { clearStorage } from "@shared/lib/storage/indexedDB";
 
 import {
   exportTreeArchive,
   importTreeArchive,
+  exportMultiTreeArchive,
+  importMultiTreeArchive,
 } from "@features/importExport/model/files";
 
 import { useSettings } from "@app/providers/SettingsProvider";
 import { useTreeStore } from "@app/providers/StoreProvider";
+import { useTreesStore } from "@app/providers/TreesProvider";
 
 export function SettingsScreen() {
   const { t } = useTranslation();
   const { settings, setTheme, setLanguage, currentTheme, currentLanguage } =
     useSettings();
   const { exportJson, importJson, personsById } = useTreeStore();
+  const { trees, importTree } = useTreesStore();
   const [aboutVisible, setAboutVisible] = useState(false);
 
   const theme = currentTheme === "dark" ? colors.dark : colors.light;
@@ -47,14 +52,38 @@ export function SettingsScreen() {
       Alert.alert("Import", String(e));
     }
   };
+  const doExportAll = async () => {
+    try {
+      const meta = Object.fromEntries(trees.map((t) => [t.id, t]));
+      await exportMultiTreeArchive(
+        trees.map((t) => t.id),
+        meta,
+      );
+    } catch (e) {
+      Alert.alert("Export", String(e));
+    }
+  };
+  const doImportAll = async () => {
+    try {
+      const results = await importMultiTreeArchive();
+      if (!results?.length) return;
+      for (const { name, treeJson } of results) {
+        await importTree(name, JSON.parse(treeJson));
+      }
+    } catch (e) {
+      Alert.alert("Import", String(e));
+    }
+  };
   const doClear = () => {
     Alert.alert(t("clear_data_title"), t("clear_data_message"), [
       { text: t("cancel"), style: "cancel" },
       {
         text: t("ok"),
         style: "destructive",
-        onPress: () =>
-          importJson(JSON.stringify({ persons: [], positions: {} })),
+        onPress: async () => {
+          await clearStorage();
+          importJson(JSON.stringify({ persons: [], positions: {} }));
+        },
       },
     ]);
   };
@@ -177,7 +206,7 @@ export function SettingsScreen() {
         }}
       >
         <Text style={{ color: theme.secondary }}>{t("data_label")}</Text>
-        <View style={{ flexDirection: "row", gap: 10 }}>
+        <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
           <IconBtn
             label={t("import_label")}
             icon="cloud-upload-outline"
@@ -189,6 +218,20 @@ export function SettingsScreen() {
             label={t("export_label")}
             icon="cloud-download-outline"
             onPress={doExport}
+            bg={theme.surfaceVariant}
+            fg={theme.primary}
+          />
+          <IconBtn
+            label={t("import_all_label")}
+            icon="archive-outline"
+            onPress={doImportAll}
+            bg={theme.surfaceVariant}
+            fg={theme.primary}
+          />
+          <IconBtn
+            label={t("export_all_label")}
+            icon="server-outline"
+            onPress={doExportAll}
             bg={theme.surfaceVariant}
             fg={theme.primary}
           />
