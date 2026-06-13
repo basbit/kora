@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "postinstall": "npx --yes patch-package",
     "generate:icons": "echo 'skip generate icons'",
     "prebuild": "yarn run generate:icons",
     "start": "yarn run prebuild && expo start",
