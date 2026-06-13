@@ -12,6 +12,7 @@ import {
 } from "react-native";
 
 import { useImageData } from "@shared/lib/fs/images";
+import { Alert } from "@shared/lib/platform/alert";
 
 type Props = {
   photoUri: string | undefined;
@@ -36,6 +37,27 @@ export const PersonPhotoSection: React.FC<Props> = ({
   const { t } = useTranslation();
   const { imageData: photoData } = useImageData(photoUri);
 
+  const pickFromLibrary = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.9,
+    });
+    if (!res.canceled && res.assets?.[0]?.uri) onPhotoChange(res.assets[0].uri);
+  };
+
+  const takePhoto = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(t("camera_permission_denied"));
+      return;
+    }
+    const res = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.9,
+    });
+    if (!res.canceled && res.assets?.[0]?.uri) onPhotoChange(res.assets[0].uri);
+  };
+
   const pickPhoto = async () => {
     if (Platform.OS === "web") {
       const input = document.createElement("input");
@@ -52,11 +74,11 @@ export const PersonPhotoSection: React.FC<Props> = ({
       input.click();
       return;
     }
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.9,
-    });
-    if (!res.canceled && res.assets?.[0]?.uri) onPhotoChange(res.assets[0].uri);
+    Alert.alert(t("photo"), undefined, [
+      { text: t("take_photo"), onPress: takePhoto },
+      { text: t("choose_from_library"), onPress: pickFromLibrary },
+      { text: t("cancel"), style: "cancel" },
+    ]);
   };
 
   const pickGalleryPhotos = async () => {

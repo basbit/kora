@@ -63,3 +63,6 @@ scripts/
 Dockerfile
 .dockerignore
 nginx.conf
+
+# Playwright MCP scratch
+.playwright-mcp/

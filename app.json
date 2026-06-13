@@ -35,7 +35,7 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.CAMERA"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/kora.png",
@@ -75,7 +75,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app needs access to your photos to upload family member images"
+          "photosPermission": "The app needs access to your photos to upload family member images",
+          "cameraPermission": "The app needs access to the camera to take photos of family members"
         }
       ]
     ],
