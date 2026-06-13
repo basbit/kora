@@ -11,12 +11,9 @@
     "preview": {
       "distribution": "internal"
     },
-"production": {
-    "autoIncrement": true,
-    "ios": {
-      "image": "macos-sequoia-15.5-xcode-26.0"
+    "production": {
+      "autoIncrement": true
     }
-  }
   },
   "submit": {
     "production": {}
