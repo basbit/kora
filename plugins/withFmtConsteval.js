@@ -1,23 +1,28 @@
 // Expo config plugin: make the `fmt` library compile under the iOS 26 SDK
-// (Xcode 26). fmt's FMT_STRING uses `consteval`, which the newer Clang rejects
-// with "call to consteval function ... is not a constant expression".
-// Defining FMT_USE_CONSTEVAL=0 forces fmt to fall back to constexpr.
+// (Xcode 26).
+//
+// fmt's base.h enables consteval unconditionally for Apple clang >= 14
+// (`#elif defined(__apple_build_version__) && __apple_build_version__ < 14000029L`),
+// so a `-DFMT_USE_CONSTEVAL=0` define is redefined away. On Xcode 26 that
+// consteval path miscompiles FMT_STRING ("call to consteval function ... is not
+// a constant expression"), failing the Release archive.
+//
+// Fix: in Podfile post_install (after pods are downloaded) patch base.h to drop
+// the version check, so consteval stays off for all Apple clang.
 const { withDangerousMod } = require("@expo/config-plugins");
 const fs = require("fs");
 const path = require("path");
 
 const MARKER = "# fmt-consteval-fix";
 const SNIPPET = `
+
     ${MARKER}
-    installer.pods_project.targets.each do |fmt_target|
-      fmt_target.build_configurations.each do |fmt_config|
-        defs = fmt_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
-        defs = [defs] unless defs.is_a?(Array)
-        defs << 'FMT_USE_CONSTEVAL=0' unless defs.include?('FMT_USE_CONSTEVAL=0')
-        fmt_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
-      end
-    end
-`;
+    fmt_base = File.join(installer.sandbox.root, 'fmt', 'include', 'fmt', 'base.h')
+    if File.exist?(fmt_base)
+      fmt_text = File.read(fmt_base)
+      fmt_patched = fmt_text.gsub('#elif defined(__apple_build_version__) && __apple_build_version__ < 14000029L', '#elif defined(__apple_build_version__)')
+      File.write(fmt_base, fmt_patched) if fmt_patched != fmt_text
+    end`;
 
 module.exports = function withFmtConsteval(config) {
   return withDangerousMod(config, [
@@ -26,10 +31,15 @@ module.exports = function withFmtConsteval(config) {
       const podfile = path.join(cfg.modRequest.platformProjectRoot, "Podfile");
       let contents = fs.readFileSync(podfile, "utf8");
       if (!contents.includes(MARKER)) {
-        contents = contents.replace(
-          /post_install do \|installer\|/,
-          (m) => m + SNIPPET,
-        );
+        const call = /react_native_post_install\([^)]*\)/;
+        if (call.test(contents)) {
+          contents = contents.replace(call, (m) => m + SNIPPET);
+        } else {
+          contents = contents.replace(
+            /post_install do \|installer\|/,
+            (m) => m + SNIPPET,
+          );
+        }
         fs.writeFileSync(podfile, contents);
       }
       return cfg;
