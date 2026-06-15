@@ -78,7 +78,8 @@
           "photosPermission": "The app needs access to your photos to upload family member images",
           "cameraPermission": "The app needs access to the camera to take photos of family members"
         }
-      ]
+      ],
+      "./plugins/withFmtConsteval"
     ],
     "extra": {
       "eas": {
