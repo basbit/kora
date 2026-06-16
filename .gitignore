@@ -66,3 +66,6 @@ nginx.conf
 
 # Playwright MCP scratch
 .playwright-mcp/
+
+# Google Play service account (secret)
+google-service-account.json
