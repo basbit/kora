@@ -21,6 +21,7 @@
       "bundleIdentifier": "com.rbaster.kora",
       "buildNumber": "1",
       "newArchEnabled": true,
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "The app needs access to your photos to upload family member images",
         "NSCameraUsageDescription": "The app needs access to the camera to take photos of family members",
@@ -31,6 +32,7 @@
     "android": {
       "package": "com.rbaster.kora",
       "versionCode": 2,
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
@@ -65,7 +67,8 @@
             "buildToolsVersion": "35.0.0"
           },
           "ios": {
-            "deploymentTarget": "15.1"
+            "deploymentTarget": "15.1",
+            "useFrameworks": "static"
           }
         }
       ],
@@ -79,7 +82,9 @@
           "cameraPermission": "The app needs access to the camera to take photos of family members"
         }
       ],
-      "./plugins/withFmtConsteval"
+      "./plugins/withFmtConsteval",
+      "@react-native-firebase/app",
+      "@react-native-firebase/analytics"
     ],
     "extra": {
       "eas": {
