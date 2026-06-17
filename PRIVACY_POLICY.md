@@ -1,6 +1,6 @@
 # Privacy Policy for KORA
 
-**Last updated:** November 6, 2025
+**Last updated:** June 16, 2026
 
 ## Introduction
 
@@ -10,13 +10,14 @@ KORA ("we", "our", or "us") is committed to protecting your privacy. This Privac
 
 ### Data Storage
 
-**KORA operates on a local-only data storage model.** This means:
+**Your family tree content stays on your device.** This means:
 
-- **All data is stored locally** on your device only
-- **No data is transmitted** to any external servers
-- **No cloud services** are used to store your information
+- **All your family tree data is stored locally** on your device only (people, photos, relationships, notes, settings)
+- **Your family tree content is never transmitted** to any external server, and **no cloud services** are used to store it
 - **No accounts or registration** are required to use the app
-- **We do not collect, access, or share** any of your personal information
+- **We do not collect, access, or share** the personal information you enter about your family
+
+The only data that leaves your device is **anonymous usage and diagnostic analytics** collected via Google Analytics to help us understand how the app is used and improve it (see "Analytics" below).
 
 ### Types of Data Stored Locally
 
@@ -55,13 +56,20 @@ The app requests the following permissions:
 - **Purpose:** To save and load your family tree data and photos
 - **Usage:** Only used for local file operations on your device
 
-## Third-Party Services
+## Analytics
 
-KORA does not use any third-party analytics, advertising, or tracking services.
+KORA uses **Google Analytics** (a service provided by Google) to collect anonymous usage and diagnostic information, such as app/page views, interactions, device and platform type, and an approximate location derived from IP address. This helps us understand how the app is used and improve it.
+
+- Analytics data is **aggregated and does not include the content of your family tree** (names, dates, photos, or notes).
+- We do **not** use advertising or ad-targeting services, and we do not sell your data.
+- Google processes this data as described in [Google's Privacy Policy](https://policies.google.com/privacy). See also [How Google uses information from sites or apps that use our services](https://policies.google.com/technologies/partner-sites).
+- On the web, you can control analytics cookies via your browser settings or our cookie/consent banner where shown.
+
+Aside from Google Analytics, KORA does not use any other third-party analytics, advertising, or tracking services.
 
 ## Children's Privacy
 
-KORA does not knowingly collect any information from anyone, including children under the age of 13, as all data is stored locally on the device.
+KORA is not directed to children. Your family tree content is stored only on your device. We do not knowingly collect personal information from children; the only data collected is the anonymous usage analytics described above.
 
 ## Data Security
 
@@ -91,12 +99,12 @@ This exported data can be:
 
 ## Your Rights
 
-Since we do not collect or store any of your data on our servers, we cannot:
-- Access your data
+Because your family tree content never leaves your device and is not stored on our servers, we cannot:
+- Access your family tree data
 - Recover deleted data
 - Transfer data between devices (you must use the export/import function)
 
-You have complete control and ownership of your data at all times.
+You have complete control and ownership of your family tree data at all times. The only information we receive is anonymous usage analytics, which is not linked to the content you create.
 
 ## Contact Us
 
@@ -114,5 +122,5 @@ KORA is open-source software. You can review our source code to verify our priva
 
 ---
 
-**Summary:** KORA is a privacy-first application. We do not collect, store, or transmit any of your personal data. Everything stays on your device, and you have complete control over your information.
+**Summary:** KORA is a privacy-first application. Your family tree content (people, photos, relationships, notes) stays on your device and is never uploaded. The only data collected is anonymous usage analytics via Google Analytics, used solely to improve the app. We do not use advertising and we do not sell your data.
 

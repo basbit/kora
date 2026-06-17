@@ -24,7 +24,7 @@ Features:
 Privacy:
 • No registration and no accounts
 • Data is never sent to any server, no cloud is used
-• No ads and no tracking
+• No ads; your family data never leaves your device (anonymous usage analytics only)
 • Open source under the MIT License
 
 KORA — your roots, always with you.

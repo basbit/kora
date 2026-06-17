@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { StatusBar, View, Pressable, Text } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
@@ -16,11 +16,16 @@ import {
 import { HomeScreen } from "./src/pages/home/ui/HomeScreen";
 import { SettingsScreen } from "./src/pages/settings/ui/SettingsScreen";
 import { colors } from "./src/shared/config/theme/colors";
+import { initAnalytics } from "./src/shared/lib/analytics";
 import { MobileCheck } from "./src/shared/ui/MobileCheck";
 
 import "./src/shared/config/i18n";
 
 export default function App() {
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
