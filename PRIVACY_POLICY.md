@@ -1,6 +1,6 @@
 # Privacy Policy for KORA
 
-**Last updated:** June 16, 2026
+**Last updated:** June 18, 2026
 
 ## Introduction
 
@@ -17,7 +17,7 @@ KORA ("we", "our", or "us") is committed to protecting your privacy. This Privac
 - **No accounts or registration** are required to use the app
 - **We do not collect, access, or share** the personal information you enter about your family
 
-The only data that leaves your device is **anonymous usage and diagnostic analytics** collected via Google Analytics to help us understand how the app is used and improve it (see "Analytics" below).
+The only data that leaves your device is **usage and diagnostic analytics** collected via Google Analytics to help us understand how the app is used and improve it (see "Analytics" below).
 
 ### Types of Data Stored Locally
 
@@ -58,18 +58,18 @@ The app requests the following permissions:
 
 ## Analytics
 
-KORA uses **Google Analytics** (a service provided by Google) to collect anonymous usage and diagnostic information, such as app/page views, interactions, device and platform type, and an approximate location derived from IP address. This helps us understand how the app is used and improve it.
+KORA uses **Google Analytics** (a service provided by Google, including Google/Firebase Analytics in the mobile apps) to collect usage and diagnostic information, such as app/page views, interactions, device and platform type, an approximate location derived from IP address, and — on Android — a resettable advertising identifier. This helps us understand how the app is used and improve it.
 
 - Analytics data is **aggregated and does not include the content of your family tree** (names, dates, photos, or notes).
-- We do **not** use advertising or ad-targeting services, and we do not sell your data.
+- KORA **does not display any advertisements**, and we do not sell your data. However, the advertising identifier collected on Android may be used by Google for analytics and advertising-performance measurement; you can reset or limit it in your device settings (Settings → Google → Ads).
 - Google processes this data as described in [Google's Privacy Policy](https://policies.google.com/privacy). See also [How Google uses information from sites or apps that use our services](https://policies.google.com/technologies/partner-sites).
 - On the web, you can control analytics cookies via your browser settings or our cookie/consent banner where shown.
 
-Aside from Google Analytics, KORA does not use any other third-party analytics, advertising, or tracking services.
+Aside from Google Analytics (Google/Firebase), KORA does not use any other third-party analytics or tracking services, and it does not show ads inside the app.
 
 ## Children's Privacy
 
-KORA is not directed to children. Your family tree content is stored only on your device. We do not knowingly collect personal information from children; the only data collected is the anonymous usage analytics described above.
+KORA is not directed to children. Your family tree content is stored only on your device. We do not knowingly collect personal information from children; the only data collected is the usage analytics described above.
 
 ## Data Security
 
@@ -104,7 +104,7 @@ Because your family tree content never leaves your device and is not stored on o
 - Recover deleted data
 - Transfer data between devices (you must use the export/import function)
 
-You have complete control and ownership of your family tree data at all times. The only information we receive is anonymous usage analytics, which is not linked to the content you create.
+You have complete control and ownership of your family tree data at all times. The only information we receive is usage analytics, which is not linked to the content you create.
 
 ## Contact Us
 
@@ -122,5 +122,5 @@ KORA is open-source software. You can review our source code to verify our priva
 
 ---
 
-**Summary:** KORA is a privacy-first application. Your family tree content (people, photos, relationships, notes) stays on your device and is never uploaded. The only data collected is anonymous usage analytics via Google Analytics, used solely to improve the app. We do not use advertising and we do not sell your data.
+**Summary:** KORA is a privacy-first application. Your family tree content (people, photos, relationships, notes) stays on your device and is never uploaded. The only data collected is usage analytics via Google Analytics, used solely to improve the app. KORA does not show ads and we do not sell your data; on Android the analytics include a resettable advertising identifier that Google may use for analytics and advertising-performance measurement.
 
