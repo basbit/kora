@@ -1,22 +1,20 @@
 # App Store Connect — ответы на опросы и заметки для ревью
 
 ## App Privacy («Конфиденциальность приложения»)
-> ⚠️ Версии БЕЗ аналитики (текущий билд iOS 11) = **Data Not Collected**. Как только выйдет
-> билд с Google Analytics — обновить на сбор данных, как ниже. НЕ менять, пока в ревью билд без GA.
+> Статус: билд 1.0.1 (13) с Google/Firebase Analytics — App Privacy = «Yes, we collect data».
+> Заполнено как ниже (опубликовано 2026-06-18). Содержимое древа НЕ собирается.
 
-Приложение с Google Analytics собирает данные (содержимое древа НЕ собирается). Указать «Yes, we collect data» и задекларировать типы:
+Задекларированные типы данных:
 
 | Тип данных | Категория ASC | Linked to user | Used for tracking | Purpose |
 |---|---|---|---|---|
-| Идентификатор экземпляра приложения (GA client/app instance ID) | **Identifiers → Device ID** | No | No | Analytics |
+| ID устройства (GA client/app-instance ID) | **Identifiers → Device ID** | No | No | Analytics + Developer's Advertising or Marketing |
 | Просмотры экранов, взаимодействия | **Usage Data → Product Interaction** | No | No | Analytics |
-| Диагностика/производительность | **Diagnostics → Performance / Other** | No | No | Analytics |
 | Примерная геолокация по IP | **Location → Coarse Location** | No | No | Analytics |
 
-- **Used for tracking: No** для всех (не объединяем с данными других компаний для рекламы, не используем IDFA/рекламу).
-- **Linked to the user: No** (анонимно, не привязано к содержимому древа).
+- **Used for tracking: No** для всех — IDFA не собирается, нет ATT-промпта, данные не объединяются с данными других компаний для таргетинга. «Developer's Advertising or Marketing» = first-party измерение эффективности (как в Android Data Safety), не требует ATT.
+- **Linked to the user: No** — не связано с личностью пользователя, не привязано к содержимому древа.
 - Содержимое древа (имена, даты, фото, заметки) — **НЕ собирается** (остаётся на устройстве).
-- Сверить с официальным маппингом Google «GA4 → App privacy» при заполнении.
 
 ## Age Rating («Возрастной рейтинг»)
 Ответить **«Нет / None»** на все вопросы анкеты (насилие, контент для взрослых,

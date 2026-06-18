@@ -1,27 +1,29 @@
 # Google Play — Data safety и Content rating
 
 ## Data safety (Безопасность данных)
-> ⚠️ Билд БЕЗ аналитики = «No data collected». С появлением Google Analytics (новый билд) —
-> задекларировать сбор, как ниже. Сверить с официальным маппингом Google «Data safety for GA4».
+> Статус: заполнено и отправлено на ревью 2026-06-18 (билд с Google/Firebase Analytics).
+> Содержимое древа — НЕ собирается.
 
-С Google Analytics приложение **собирает** данные (содержимое древа — НЕ собирается):
+Задекларированный сбор (всё: Collected, не Shared, не ephemeral, обязательно):
 
-| Категория Play | Тип данных | Назначение | Shared | Optional |
-|---|---|---|---|---|
-| **App activity** | App interactions (просмотры экранов/события) | Analytics | No | No (обязательно для аналитики) |
-| **App info & performance** | Crash logs, Diagnostics | Analytics | No | — |
-| **Device or other IDs** | App instance ID (GA) | Analytics | No | — |
-| **Location** | Approximate location (по IP) | Analytics | No | — |
+| Категория Play | Тип данных | Назначение | Shared |
+|---|---|---|---|
+| **App activity** | App interactions (просмотры экранов/события) | Analytics | No |
+| **Device or other IDs** | Device or other IDs (рекламный/GA-идентификатор) | Analytics + Advertising or marketing | No |
+| **Location** | Approximate location (по IP) | Analytics | No |
 
 - **Encryption in transit:** Да (GA передаёт по HTTPS).
-- **Data deletion:** содержимое древа удаляется на устройстве («Очистить»); аналитика анонимна и управляется через Google Analytics.
+- **Account creation:** приложение не позволяет создавать аккаунты; вход через внешние аккаунты — нет.
+- **Data deletion:** содержимое древа удаляется на устройстве («Очистить»); по аналитике отдельного механизма запроса удаления нет (данные не связаны с личностью).
 - **Shared:** нет (Google выступает обработчиком/сервис-провайдером).
 - Содержимое древа (имена, даты, фото, заметки) в Data safety НЕ указывать — оно не покидает устройство.
 
-### ⚠️ Advertising ID
-GA4 по умолчанию не использует Advertising ID (без Google Signals). Если в манифесте присутствует
-`com.google.android.gms.permission.AD_ID` (тянется зависимостями) и реклама не нужна — лучше
-исключить это разрешение в app.json, тогда декларация Advertising ID = «Нет» корректна.
+### Advertising ID
+Firebase Analytics на Android тянет `com.google.android.gms.permission.AD_ID`. Решено **оставить**
+и задекларировать Advertising ID = **«Да»**, цель **«Advertising or marketing»** (в форме Play нет
+пункта «Аналитика» для рекламного ID). Реклама в приложении не показывается; идентификатор приходит
+только из Firebase Analytics и используется для аналитики/оценки эффективности. Альтернатива на будущее:
+убрать разрешение AD_ID (config-plugin) и переключить декларацию на «Нет».
 
 ## Content rating (анкета IARC)
 - Категория приложения: **Reference / News / Education / Other** → Utility / Lifestyle.
