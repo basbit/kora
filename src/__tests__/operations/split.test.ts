@@ -166,11 +166,7 @@ describe("split()", () => {
     });
 
     it("root person parentIds that are inside subtree are preserved", () => {
-      const parent = makePerson("parent");
-      const root = makePerson("root", { parentIds: ["parent"] });
-      const child = makePerson("child", { parentIds: ["root"] });
-      // parent is a spouse of root — but wait, here parent is a parent of root
-      // For parent to be in subtree, root must be its child... So let's use spouse instead
+      // Scenario uses a spouse relationship so the spouse is pulled into the subtree.
       const spouse = makePerson("spouse");
       const root2 = makePerson("root2", {
         parentIds: [],
@@ -334,7 +330,7 @@ describe("split()", () => {
       // outsider had root as a parent (unusual but test the cleanup)
       const outsider = makePerson("outsider", { parentIds: ["root"] });
       const source = makeTree("src", [root, child, grandchild, outsider]);
-      const { original } = split({
+      split({
         source,
         rootPersonId: "root",
         keepInOriginal: false,

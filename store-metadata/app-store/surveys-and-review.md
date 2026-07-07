@@ -1,18 +1,19 @@
 # App Store Connect — ответы на опросы и заметки для ревью
 
 ## App Privacy («Конфиденциальность приложения»)
-> Статус: билд 1.0.1 (13) с Google/Firebase Analytics — App Privacy = «Yes, we collect data».
-> Заполнено как ниже (опубликовано 2026-06-18). Содержимое древа НЕ собирается.
+> Статус: билд с Google/Firebase Analytics — App Privacy = «Yes, we collect data».
+> Содержимое древа НЕ собирается. **Только Analytics** — без рекламных целей (см. ниже про 5.1.2).
 
 Задекларированные типы данных:
 
 | Тип данных | Категория ASC | Linked to user | Used for tracking | Purpose |
 |---|---|---|---|---|
-| ID устройства (GA client/app-instance ID) | **Identifiers → Device ID** | No | No | Analytics + Developer's Advertising or Marketing |
+| ID устройства (GA client/app-instance ID) | **Identifiers → Device ID** | No | No | Analytics |
 | Просмотры экранов, взаимодействия | **Usage Data → Product Interaction** | No | No | Analytics |
 | Примерная геолокация по IP | **Location → Coarse Location** | No | No | Analytics |
 
-- **Used for tracking: No** для всех — IDFA не собирается, нет ATT-промпта, данные не объединяются с данными других компаний для таргетинга. «Developer's Advertising or Marketing» = first-party измерение эффективности (как в Android Data Safety), не требует ATT.
+- **Used for tracking: No** для всех — IDFA не собирается, нет ATT-промпта.
+- ⚠️ **5.1.2(i):** Apple отклонил билд 16, когда Device ID был помечен «Developer's Advertising or Marketing» (Apple трактует это как tracking → требует ATT). На iOS приложение НЕ трекает (Firebase iOS не собирает IDFA), поэтому цель откатили на **только Analytics**. На Android отдельно: AD_ID присутствует → там декларируется Advertising/marketing (это корректно для Play, разные платформы).
 - **Linked to the user: No** — не связано с личностью пользователя, не привязано к содержимому древа.
 - Содержимое древа (имена, даты, фото, заметки) — **НЕ собирается** (остаётся на устройстве).
 

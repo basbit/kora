@@ -230,7 +230,8 @@ function collectSubtree(source: TreeState, rootPersonId: string): Set<string> {
   const queue: string[] = [rootPersonId];
 
   while (queue.length > 0) {
-    const current = queue.shift()!;
+    const current = queue.shift();
+    if (current === undefined) break;
     if (visited.has(current)) continue;
     visited.add(current);
 

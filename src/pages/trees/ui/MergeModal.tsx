@@ -94,12 +94,12 @@ export const MergeModal: React.FC<Props> = ({
       ]);
       if (!treeAData || !treeBData) return;
 
-      const toState = (id: string, data: typeof treeAData) => ({
+      const toState = (id: string, data: NonNullable<typeof treeAData>) => ({
         id,
         personsById: Object.fromEntries(
-          (data!.persons ?? []).map(normalizePerson).map((p) => [p.id, p]),
+          (data.persons ?? []).map(normalizePerson).map((p) => [p.id, p]),
         ),
-        positions: data!.positions ?? {},
+        positions: data.positions ?? {},
         uiOffsets: {},
         rootId: undefined as string | undefined,
       });

@@ -18,7 +18,10 @@
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "6754966534"
+        "ascAppId": "6754966534",
+        "ascApiKeyPath": "/Users/baster/.appstoreconnect/private_keys/AuthKey_FL5FZ8J9TF.p8",
+        "ascApiKeyId": "FL5FZ8J9TF",
+        "ascApiKeyIssuerId": "c6b69570-77df-4f16-9ed4-4126f5583640"
       },
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",

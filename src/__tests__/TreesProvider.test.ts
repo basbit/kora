@@ -16,7 +16,7 @@ import { clearNativeStorage } from "@shared/lib/storage/native";
 import type { TreeJson } from "@entities/person/model/types";
 import type { TreeMetadata } from "@entities/tree/model/types";
 
-function makeTree(id: string): TreeJson {
+function makeTree(_id: string): TreeJson {
   return {
     persons: [{ id: "p1", firstName: "Alice", parentIds: [], spouseIds: [] }],
     positions: { p1: { x: 0, y: 0 } },
@@ -47,7 +47,7 @@ describe("Trees index storage contract", () => {
     await saveTreesIndex({ t1: makeMeta("t1") });
     await saveTreesIndex({ t2: makeMeta("t2") });
     const loaded = await loadTreesIndex();
-    expect(Object.keys(loaded!)).toEqual(["t2"]);
+    expect(loaded && Object.keys(loaded)).toEqual(["t2"]);
   });
 });
 
@@ -120,15 +120,15 @@ describe("Migration contract: createTree initializes storage correctly", () => {
     };
     await saveTreeById("newId", tree);
     const loaded = await loadTreeById("newId");
-    expect(loaded!.persons).toHaveLength(1);
-    expect(loaded!.positions).toEqual({ root: { x: 0, y: 0 } });
+    expect(loaded?.persons).toHaveLength(1);
+    expect(loaded?.positions).toEqual({ root: { x: 0, y: 0 } });
   });
 
   it("trees index persists metadata correctly", async () => {
     const meta = makeMeta("t1", "My Family Tree");
     await saveTreesIndex({ t1: meta });
     const index = await loadTreesIndex();
-    expect(index!["t1"].name).toBe("My Family Tree");
-    expect(index!["t1"].personCount).toBe(1);
+    expect(index?.["t1"]?.name).toBe("My Family Tree");
+    expect(index?.["t1"]?.personCount).toBe(1);
   });
 });

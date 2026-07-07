@@ -393,28 +393,37 @@ export function SettingsScreen() {
                 </Text>
               </Pressable>
 
-              <Pressable
-                onPress={() =>
-                  Linking.openURL("https://buymeacoffee.com/rbaster")
-                }
-                style={{
-                  backgroundColor: "#FFDD00",
-                  padding: 12,
-                  borderRadius: 8,
-                  marginBottom: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                }}
-              >
-                <Ionicons name="cafe" size={20} color="#000000" />
-                <Text
-                  style={{ color: "#000000", fontSize: 14, fontWeight: "600" }}
+              {/* Donations must use In-App Purchase on iOS (App Store
+                  Guideline 3.1.1), so the external donation link is hidden
+                  on iOS. Kept on web and Android. */}
+              {Platform.OS !== "ios" && (
+                <Pressable
+                  onPress={() =>
+                    Linking.openURL("https://buymeacoffee.com/rbaster")
+                  }
+                  style={{
+                    backgroundColor: "#FFDD00",
+                    padding: 12,
+                    borderRadius: 8,
+                    marginBottom: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  }}
                 >
-                  {t("support")}
-                </Text>
-              </Pressable>
+                  <Ionicons name="cafe" size={20} color="#000000" />
+                  <Text
+                    style={{
+                      color: "#000000",
+                      fontSize: 14,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {t("support")}
+                  </Text>
+                </Pressable>
+              )}
 
               <View
                 style={{ flexDirection: "row", justifyContent: "flex-end" }}

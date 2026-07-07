@@ -30,7 +30,8 @@ function countDescendants(
   const visited = new Set<string>();
   const queue = [rootId];
   while (queue.length > 0) {
-    const id = queue.shift()!;
+    const id = queue.shift();
+    if (id === undefined) break;
     if (visited.has(id)) continue;
     visited.add(id);
     const p = personsById[id];

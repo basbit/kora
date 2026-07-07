@@ -20,7 +20,7 @@ import {
 import type { TreeJson } from "@entities/person/model/types";
 import type { TreeMetadata } from "@entities/tree/model/types";
 
-function makeTree(id: string): TreeJson {
+function makeTree(_id: string): TreeJson {
   return {
     persons: [
       { id: "p1", firstName: "Alice", parentIds: [], spouseIds: [] },
@@ -55,7 +55,7 @@ describe("saveTreesIndexToNative / loadTreesIndexFromNative", () => {
     await saveTreesIndexToNative({ t1: makeMeta("t1") });
     await saveTreesIndexToNative({ t2: makeMeta("t2") });
     const loaded = await loadTreesIndexFromNative();
-    expect(Object.keys(loaded!)).toEqual(["t2"]);
+    expect(loaded && Object.keys(loaded)).toEqual(["t2"]);
   });
 });
 

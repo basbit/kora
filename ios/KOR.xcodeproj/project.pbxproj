@@ -14,7 +14,8 @@
 		96905EF65AED1B983A6B3ABC /* libPods-KOR.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 58EEBF8E8E6FB1BC6CAF49B5 /* libPods-KOR.a */; };
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		839AE85A938D4FA28EF3B18B /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = B647C70A84E54688AAFED0A2 /* noop-file.swift */; };
+		0A8F2FBAB8AE42D0A338AE16 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 02126A2595614347A01BCC20 /* GoogleService-Info.plist */; };
+		8A9156F3F9AB41F3B6990734 /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB39652392774CDD82654C36 /* noop-file.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,8 +32,9 @@
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-KOR/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		B647C70A84E54688AAFED0A2 /* noop-file.swift */ = {isa = PBXFileReference; name = "noop-file.swift"; path = "KOR/noop-file.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
-		AE4E2307BF3847C192F19C7E /* KOR-Bridging-Header.h */ = {isa = PBXFileReference; name = "KOR-Bridging-Header.h"; path = "KOR/KOR-Bridging-Header.h"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; explicitFileType = undefined; includeInIndex = 0; };
+		02126A2595614347A01BCC20 /* GoogleService-Info.plist */ = {isa = PBXFileReference; name = "GoogleService-Info.plist"; path = "KOR/GoogleService-Info.plist"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.xml; explicitFileType = undefined; includeInIndex = 0; };
+		DB39652392774CDD82654C36 /* noop-file.swift */ = {isa = PBXFileReference; name = "noop-file.swift"; path = "KOR/noop-file.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		2D429322906347A2AB3F49CB /* KOR-Bridging-Header.h */ = {isa = PBXFileReference; name = "KOR-Bridging-Header.h"; path = "KOR/KOR-Bridging-Header.h"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,8 +59,9 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				13B07FB71A68108700A75B9A /* main.m */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				B647C70A84E54688AAFED0A2 /* noop-file.swift */,
-				AE4E2307BF3847C192F19C7E /* KOR-Bridging-Header.h */,
+				02126A2595614347A01BCC20 /* GoogleService-Info.plist */,
+				DB39652392774CDD82654C36 /* noop-file.swift */,
+				2D429322906347A2AB3F49CB /* KOR-Bridging-Header.h */,
 			);
 			name = KOR;
 			sourceTree = "<group>";
@@ -198,7 +201,8 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				B27809331DD44D5ABBAAB456 /* KOR-Bridging-Header.h in Resources */,
+				0A8F2FBAB8AE42D0A338AE16 /* GoogleService-Info.plist in Resources */,
+				62470202AA9B415FB9916ED9 /* KOR-Bridging-Header.h in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -274,7 +278,7 @@
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 				B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */,
-				839AE85A938D4FA28EF3B18B /* noop-file.swift in Sources */,
+				8A9156F3F9AB41F3B6990734 /* noop-file.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
